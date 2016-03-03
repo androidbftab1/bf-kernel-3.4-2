@@ -1,0 +1,31 @@
+
+die() {
+        echo "$*" >&2
+        exit 1
+}
+
+cd ../output
+
+[ -s "../chosen_board.mk" ] || die "please run ./configure first."
+
+set -e
+
+. ../chosen_board.mk
+
+PACK_ROOT="sunxi-pack"
+#PLATFORM="linux"
+PLATFORM="dragonboard"
+
+BOARDS=$1
+
+for IN in $BOARDS
+do
+	BOARD=$IN
+	echo "MACH=$MACH, PLATFORM=$PLATFORM, BOARD=$BOARD"
+	mkdir -p $BOARD/pack
+	ln -s ../BPI_M3_720P/bootloader $BOARD/bootloader
+	ln -s ../BPI_M3_720P/kernel $BOARD/kernel
+	ln -s ../BPI_M3_720P/rootfs $BOARD/rootfs
+	
+
+done

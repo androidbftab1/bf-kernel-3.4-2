@@ -1,0 +1,9 @@
+
+BOARDS="BPI_M2P_720P"
+
+for IN in $BOARDS
+do
+	BOARD=$IN
+	echo "./bootloader-m2p.sh $BOARD"
+	./bootloader-m2p.sh $BOARD
+done
