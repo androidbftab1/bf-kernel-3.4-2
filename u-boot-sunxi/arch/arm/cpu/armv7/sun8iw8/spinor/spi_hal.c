@@ -32,14 +32,14 @@ static u32 g_cfg_mclk = 0;
 //static sunxi_dma_setting_t *spi_rx_dma;
 //static  uint  spi_tx_dma_hd;
 //static  uint  spi_rx_dma_hd;
-#if 1
+#if 0
 #define SUNXI_DEBUG(fmt,args...)	printf(fmt ,##args)
 #else
 #define SUNXI_DEBUG(fmt,args...) do {} while(0)
 #endif
 
-#define readb(addr)     (*((volatile unsigned char  *)(addr)))
-#define writeb(v, addr) (*((volatile unsigned char  *)(addr)) = (unsigned char)(v))
+//#define readb(addr)     (*((volatile unsigned char  *)(addr)))
+//#define writeb(v, addr) (*((volatile unsigned char  *)(addr)) = (unsigned char)(v))
 
 void spic_config_dual_mode(u32 spi_no, u32 rxdual, u32 dbc, u32 stc)
 {
@@ -174,7 +174,7 @@ u32 spi_cfg_mclk(u32 spi_no, u32 src, u32 mclk)
 		n = 0;
 		m = div;
 	}
-	
+
 	rval = (1U << 31) | (src << 24) | (n << 16) | (m - 1);
 	writel(rval, mclk_base);
 	g_cfg_mclk = source_clk / (1 << n) / (m - 1);
@@ -194,9 +194,9 @@ void spi_gpio_cfg(int spi_no)
 	writel(0x3333, (0x1c20800 + 0x48));   // PIO SETTING,PortC SPI0
 	reg_val = readl(0x1c20800 + 0x64);	  // PIO SETTING,PortC SPI0 pull reg
 	reg_val &= ~(0x03 << 4);
-	reg_val |= (0x01 << 4); 
+	reg_val |= (0x01 << 4);
 	writel(reg_val, (0x1c20800 + 0x64));
-	
+
 	SUNXI_DEBUG("Reg pull reg_val=0x%x,read=0x%x\n",reg_val,readl((0x1c20800 + 0x64)));
 }
 
@@ -207,7 +207,7 @@ void spi_onoff(u32 spi_no, u32 onoff)
 	spi_no = 0;
 	switch (spi_no) {
 	case 0:
-            spi_gpio_cfg(0);	
+            spi_gpio_cfg(0);
             break;
 	}
 	ccm_module_reset_bak(clkid[spi_no]);
@@ -225,17 +225,17 @@ void spic_set_clk(u32 spi_no, u32 clk)
 	u32 cdr1 = 0;
 	u32 cdr2 = 0;
 	u32 cdr_sel = 0;
-	
+
 	div = mclk/(clk<<1);
-	
+
 	if (div==0) {
 		cdr1 = 0;
-	
+
 		cdr2 = 0;
 		cdr_sel = 0;
 	} else if (div<=0x100) {
 		cdr1 = 0;
-	
+
 		cdr2 = div-1;
 		cdr_sel = 1;
 	} else {
@@ -245,11 +245,11 @@ void spic_set_clk(u32 spi_no, u32 clk)
 		    mclk >>= 1;
 		}
 		cdr1 = div;
-	
+
 		cdr2 = 0;
 		cdr_sel = 0;
 	}
-	
+
 	writel((cdr_sel<<12)|(cdr1<<8)|cdr2, SPI_CCR);
 	SUNXI_DEBUG("spic_set_clk:mclk=0x%x\n",mclk);
 }
@@ -260,19 +260,19 @@ int spic_init(u32 spi_no)
 	//uint reg_val, div;
 	spi_no = 0;
 	spi_onoff(spi_no, 1);
-	
+
 	spi_cfg_mclk(spi_no, SPI_CLK_SRC, SPI_MCLK);
 	spic_set_clk(spi_no, SPI_DEFAULT_CLK);
-	
+
 	rval = SPI_SOFT_RST|SPI_TXPAUSE_EN|SPI_MASTER|SPI_ENABLE;
 	writel(rval, SPI_GCR);
 	rval = SPI_SET_SS_1|SPI_DHB|SPI_SS_ACTIVE0;   //set ss to high,discard unused burst,SPI select signal polarity(low,1=idle)
 	writel(rval, SPI_TCR);
     writel(SPI_TXFIFO_RST|(SPI_TX_WL<<16)|(SPI_RX_WL), SPI_FCR);
-    return 0;    
+    return 0;
 }
 
-int spic_rw( u32 tcnt, void* txbuf, u32 rcnt, void* rxbuf) 
+int spic_rw( u32 tcnt, void* txbuf, u32 rcnt, void* rxbuf)
 {
 	u32 i = 0,fcr;
 	int timeout = 0xfffff;

@@ -33,6 +33,7 @@
 #include "private_toc.h"
 #include "asm/arch/nand_boot0.h"
 
+extern int verify_addsum( void *mem_base, __u32 size );
 /*******************************************************************************
 *函数名称: load_Boot1_from_nand
 *函数原型：int32 load_Boot1_from_nand( void )

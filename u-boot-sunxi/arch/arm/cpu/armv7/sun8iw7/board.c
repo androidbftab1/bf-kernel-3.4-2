@@ -385,6 +385,73 @@ int sunxi_get_securemode(void)
 #define PMU_ADDR 		0x65
 #define VOL_REG_ADDR	0x01
 extern int i2c_write(uint bus_id, uchar chip, uint addr, int alen, uchar *buffer, int len);
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :cpux_freq_detect
+*
+*    parmeters     :void
+*
+*    return        :void
+*
+*    note          :
+*
+*
+************************************************************************************************************
+*/
+int cpux_freq_gpio_probe(void)
+{
+	int ret;
+	int vid_used = 0;
+	volatile __u32 value = 0;
+	volatile __u32 value_temp = 0;
+
+	ret = script_parser_fetch("board_vendor", "vid_used", (int *)&vid_used, sizeof(int) / 4);
+	if (ret || !vid_used)
+	{
+		printf("[board_vendor] vid_used not used\n");
+		return -1;
+	}
+	//设置gpio输入属性
+	value_temp = *((volatile unsigned int *)(SUNXI_PIO_BASE + 0x74));
+	value_temp &= (~(0x0f << 4));											//PD17
+	*((volatile unsigned int *)(SUNXI_PIO_BASE + 0x74)) = value_temp;
+	__usdelay(10);
+
+	//设置gpio为上拉模式
+	value_temp = *((volatile unsigned int *)(SUNXI_PIO_BASE + 0x8C));		//PD17
+	value_temp &= (~(0x03 << 2));
+	value_temp |= (0x01 << 2);
+	*((volatile unsigned int *)(SUNXI_PIO_BASE + 0x8C)) = value_temp;
+	__usdelay(10);
+
+	//读取gpio数据
+	value_temp = *((volatile unsigned int *)(SUNXI_PIO_BASE + 0x7c));
+	__usdelay(10);
+	printf("gpio value=0x%x\n", value_temp);
+	value = (value_temp >> 17) & 0x01;
+
+	return value;
+}
+
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :sunxi_set_cpux_voltage_by_i2c
+*
+*    parmeters     :void
+*
+*    return        :void
+*
+*    note          :
+*
+*
+************************************************************************************************************
+*/
 void sunxi_set_cpux_voltage_by_i2c(uint volt)
 {
 	u8 change = VOL2REG(volt);
@@ -440,7 +507,7 @@ void sunxi_set_cpux_voltage(void)
 		return ;
 	}
 	debug("min_freq is %d \n",min_freq);
-
+	
 	if(max_freq < set_clock)
 		set_clock = max_freq;
 	if(min_freq > set_clock)
@@ -483,6 +550,12 @@ void sunxi_set_cpux_voltage(void)
 		printf("can not find pmuic_type form script  \n");
 		return ;
    }
+
+	if(cpux_freq_gpio_probe() == 0)
+	{
+		printf("cpux freq run low\n");
+		return ;
+	}
 
 //type 8016 i2c or gpio or none
 	if(pmuic_type == 2)

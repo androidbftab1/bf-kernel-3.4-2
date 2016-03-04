@@ -46,6 +46,7 @@ __u32 BOOT1_LAST_BLK_NUM = 0;
 __u32 page_with_bad_block = 0;
 
 
+extern __u32 Nand_Is_lsb_page(__u32 page);
 
 __s32 NF_open( void )
 {

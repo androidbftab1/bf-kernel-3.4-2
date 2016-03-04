@@ -298,6 +298,15 @@ static int mmc_resource_init(int sdc_no)
 	mmchost->mmc_clk_dly[MMC_CLK_50M].mode 			= MMC_CLK_50M;
 	mmchost->mmc_clk_dly[MMC_CLK_50M].oclk_dly 	= 5;
 	mmchost->mmc_clk_dly[MMC_CLK_50M].sclk_dly 	= 4;
+
+#elif defined CONFIG_ARCH_SUN8IW6P1	
+	mmchost->mmc_clk_dly[MMC_CLK_25M].mode 			= MMC_CLK_25M;
+	mmchost->mmc_clk_dly[MMC_CLK_25M].oclk_dly 	= 0;
+	mmchost->mmc_clk_dly[MMC_CLK_25M].sclk_dly 	= 7;
+
+	mmchost->mmc_clk_dly[MMC_CLK_50M].mode 			= MMC_CLK_50M;
+	mmchost->mmc_clk_dly[MMC_CLK_50M].oclk_dly 	= 6;
+	mmchost->mmc_clk_dly[MMC_CLK_50M].sclk_dly 	= 7;
 #else
 	/**init retry table**/
 	mmchost->mmc_clk_sdly_rty_tbl[MMC_CLK_400K].mode = MMC_CLK_400K;
@@ -803,6 +812,21 @@ static int mmc_update_clk(struct mmc *mmc)
 	writel(readl(&mmchost->reg->rint), &mmchost->reg->rint);
 	return 0;
 }
+
+static int mmc_update_phase(struct mmc *mmc)
+{
+	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
+	
+	if( (mmchost->mmc_no== 2) && (mmc->host_func & MMC_HOST_2XMODE_FUNC) )
+	{
+		MMCINFO("mmc re-update_phase\n");
+		return mmc_update_clk(mmc);
+	}
+	
+	return 0;
+}
+
+
 
 #if defined(CONFIG_ARCH_SUN8IW5P1) || defined(CONFIG_ARCH_SUN8IW6P1)||defined(CONFIG_ARCH_SUN8IW8P1) ||(defined CONFIG_ARCH_SUN8IW7P1)
 static int mmc_2xmode_config_clock(struct mmc *mmc, unsigned clk)
@@ -1684,6 +1708,7 @@ int sunxi_mmc_init(int sdc_no)
 	mmc->set_ios = mmc_set_ios;
 	mmc->init = mmc_core_init;
 	mmc->control_num = sdc_no;
+	mmc->update_phase = mmc_update_phase;
 
 	mmc->voltages = MMC_VDD_32_33 | MMC_VDD_33_34
 		| MMC_VDD_27_28 | MMC_VDD_28_29 | MMC_VDD_29_30

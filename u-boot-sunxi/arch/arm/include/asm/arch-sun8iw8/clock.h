@@ -117,5 +117,8 @@ extern int sunxi_clock_set_corepll(int frequency, int core_vol);
 extern int sunxi_clock_set_pll6(void);
 extern int sunxi_clock_get_pll6(void);
 
+extern void set_pll( void );
+extern void set_gpio_gate(void);
+extern void reset_pll(void);
 
 #endif /* _SUNXI_CLOCK_H */

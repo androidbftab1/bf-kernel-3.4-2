@@ -192,7 +192,7 @@ void power_limit_init(void)
 	do
 	{
 		#ifdef CONFIG_ARCH_HOMELET
-			break;	
+			break;
 		#endif
 		axp_power_get_dcin_battery_exist(&dcin_exist, &battery_exist);//ÅÐ¶Ïµç³ØÊÇ·ñ´æÔÚ
 		if(battery_exist >= 0)

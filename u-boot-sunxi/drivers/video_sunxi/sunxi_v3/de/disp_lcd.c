@@ -305,6 +305,18 @@ static s32 lcd_parse_panel_para(u32 disp, disp_panel_para * info)
         info->lcd_hv_sync_polarity = value;
     }
 
+    ret = disp_sys_script_get_item(primary_key, "lcd_hv_srgb_seq", &value, 1);
+    if(ret == 1)
+    {
+        info->lcd_hv_srgb_seq = value;
+    }
+
+    ret = disp_sys_script_get_item(primary_key, "lcd_rb_swap", &value, 1);
+    if(ret == 1)
+    {
+        info->lcd_rb_swap = value;
+    }
+
     ret = disp_sys_script_get_item(primary_key, "lcd_hv_syuv_seq", &value, 1);
     if(ret == 1)
     {

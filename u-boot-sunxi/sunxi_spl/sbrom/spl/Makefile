@@ -31,6 +31,7 @@ COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/gpio_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/serial_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/clock_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/ss_spl.o
+COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/efuse_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/smta_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/smc_spl.o
 COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/gic_spl.o

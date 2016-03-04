@@ -263,12 +263,25 @@ int do_probe_secure_storage(cmd_tbl_t *cmdtp, int flag, int argc, char * const a
 
 			return -1;
 		}
-		ret = sunxi_secure_storage_erase_all();
-		if(ret < 0)
-		{
-			printf("erase secure storage failed\n");
 
-			return -1;
+		if(argc == 2)
+		{
+			ret = sunxi_secure_storage_erase_all();
+			if(ret < 0)
+			{
+				printf("erase secure storage failed\n");
+				return -1;
+			}
+		}
+		else if(argc == 3)
+		{
+			if(!strcmp(name, "key_burned_flag"))
+			{
+				if(sunxi_secure_storage_erase_data_only("key_burned_flag"))
+				{
+					printf("erase key_burned_flag failed\n");
+				}
+			}
 		}
 		sunxi_secure_storage_exit();
 

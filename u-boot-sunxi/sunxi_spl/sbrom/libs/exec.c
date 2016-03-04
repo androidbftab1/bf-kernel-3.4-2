@@ -21,6 +21,7 @@
 #include "common.h"
 #include <asm/arch/smta.h>
 #include <asm/arch/smc.h>
+#include <asm/arch/mmc_boot0.h>
 #include <private_toc.h>
 #include <private_uboot.h>
 
@@ -39,8 +40,8 @@ unsigned int go_exec (u32 run_addr, u32 para_addr, int out_secure)
 		struct spare_boot_head_t *bfh = (struct spare_boot_head_t *)run_addr;
 		toc0_private_head_t *toc0 = (toc0_private_head_t *)CONFIG_SBROMSW_BASE;
 		int boot_type = toc0->platform[0];
+		int card_work_mode = toc0_config->card_work_mode;
 		uint dram_size;
-
 
 		if(!boot_type)
 		{
@@ -56,6 +57,11 @@ unsigned int go_exec (u32 run_addr, u32 para_addr, int out_secure)
 
 		printf("storage_type=%d\n", boot_type);
 		bfh->boot_data.storage_type = boot_type;
+		if(card_work_mode)
+		{
+			bfh->boot_data.work_mode = card_work_mode;
+			printf("card_work_mode=%d\n", card_work_mode);
+		}
                 if(out_secure == SECURE_SWITCH_NORMAL)
                 {
                     bfh->boot_data.secureos_exist = 1;

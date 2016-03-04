@@ -42,7 +42,7 @@ int disp_al_capture_sync(u32 disp);
 int disp_al_capture_apply(unsigned int disp, struct disp_capture_config *cfg);
 int disp_al_capture_get_status(unsigned int disp);
 
-int disp_al_lcd_cfg(u32 screen_id, disp_panel_para * panel);
+int disp_al_lcd_cfg(u32 screen_id, disp_panel_para * panel, panel_extend_para *extend_panel);
 int disp_al_lcd_enable(u32 screen_id, disp_panel_para * panel);
 int disp_al_lcd_disable(u32 screen_id, disp_panel_para * panel);
 int disp_al_lcd_query_irq(u32 screen_id, __lcd_irq_id_t irq_id, disp_panel_para * panel);
@@ -52,6 +52,13 @@ int disp_al_lcd_io_cfg(u32 screen_id, u32 enable, disp_panel_para * panel);
 int disp_al_lcd_get_cur_line(u32 screen_id, disp_panel_para * panel);
 int disp_al_lcd_get_start_delay(u32 screen_id, disp_panel_para * panel);
 int disp_al_lcd_get_clk_info(u32 screen_id, struct lcd_clk_info *info, disp_panel_para * panel);
+
+int disp_al_vdevice_enable(u32 screen_id);
+int disp_al_vdevice_disable(u32 screen_id);
+int disp_al_device_get_cur_line(u32 screen_id);
+int disp_al_device_get_start_delay(u32 screen_id);
+int disp_al_device_query_irq(u32 screen_id);
+int disp_al_vdevice_cfg(u32 screen_id, disp_video_timings *video_info, disp_vdevice_interface_para *para);
 
 int disp_al_hdmi_enable(u32 screen_id);
 int disp_al_hdmi_disable(u32 screen_id);

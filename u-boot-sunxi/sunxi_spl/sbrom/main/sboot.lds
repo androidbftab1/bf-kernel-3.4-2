@@ -10,7 +10,10 @@ SECTIONS
 	{
 		main/sbromsw_head.o (.rodata)
 	}
-
+        .hash :
+        {
+		main/sbromsw_hash.o  (.data)
+        }
 	.text :
 	{
 		main/brom.o (.text)

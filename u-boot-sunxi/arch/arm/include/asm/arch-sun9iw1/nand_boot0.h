@@ -87,7 +87,7 @@ typedef enum
 	ADV_NF_NEW_BAD_BLOCK      ,
 }adv_nf_errer_e;
 
-
+extern __s32 load_Boot1_from_nand( void );
 extern __s32 load_and_check_in_one_blk( __u32 blk_num, void *buf, __u32 size, __u32 blk_size);
 
 extern __s32 load_in_many_blks( __u32 start_blk, __u32 last_blk_num, void *buf,
@@ -106,6 +106,7 @@ extern __s32  NF_erase( __u32 blk_num );
 extern __s32  NF_read_status ( __u32 blk_num );
 extern __s32  NF_mark_bad_block( __u32 blk_num );
 extern __s32  NF_verify_block( __u32 blk_num );
+extern __u32 load_uboot_in_one_block_judge(__u32 length);
 
 
 

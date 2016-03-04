@@ -10,6 +10,10 @@
 #include "tv/drv_tv_i.h"
 #endif
 
+#if defined(CONFIG_USE_AC200)
+#include "tv/tv_ac200.h"
+#endif
+
 
 // 1M + 64M(ve) + 16M(fb)
 #define FB_RESERVED_MEM

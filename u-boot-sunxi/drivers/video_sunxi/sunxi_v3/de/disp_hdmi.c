@@ -143,6 +143,7 @@ static s32 disp_hdmi_set_func(struct disp_device*  hdmi, disp_hdmi_func * func)
 	hdmip->hdmi_func.hdmi_suspend = func->hdmi_suspend;
 	hdmip->hdmi_func.hdmi_resume = func->hdmi_resume;
 	hdmip->hdmi_func.hdmi_get_HPD_status = func->hdmi_get_HPD_status;
+	hdmip->hdmi_func.hdmi_get_edid = func->hdmi_get_edid;
 
 	return 0;
 }
@@ -392,6 +393,19 @@ static s32 disp_hdmi_get_input_color_range(struct disp_device* hdmi)
 	//return DISP_COLOR_RANGE_16_235;
 }
 
+static s32 disp_hdmi_get_edid(struct disp_device* hdmi)
+{
+	struct disp_device_private_data *hdmip = disp_hdmi_get_priv(hdmi);
+	if((NULL == hdmi) || (NULL == hdmip)) {
+		DE_WRN("hdmi set func null  hdl!\n");
+		return DIS_FAIL;
+	}
+
+	if(hdmip->hdmi_func.hdmi_get_edid == NULL)
+		return 0;
+	return hdmip->hdmi_func.hdmi_get_edid();
+}
+
 static s32 disp_hdmi_suspend(struct disp_device* hdmi)
 {
 	struct disp_device_private_data *hdmip = disp_hdmi_get_priv(hdmi);
@@ -503,6 +517,7 @@ s32 disp_init_hdmi(disp_bsp_init_para * para)
 			hdmi->suspend = disp_hdmi_suspend;
 			hdmi->resume = disp_hdmi_resume;
 			hdmi->detect = disp_hdmi_detect;
+			hdmi->get_edid = disp_hdmi_get_edid;
 
 			if(bsp_disp_feat_is_supported_output_types(disp, DISP_OUTPUT_TYPE_HDMI)) {
 				hdmi->init(hdmi);

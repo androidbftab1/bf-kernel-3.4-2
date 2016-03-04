@@ -39,6 +39,8 @@ LIBS-$(CONFIG_BOOT_A15) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/a15/liba15.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/nand/libnand.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmc/libmmc.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libdram.o
+LIBS-$(CONFIG_SUNXI_CHIPID) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libchipid.o
+
 LIBS-y += lib/openssl/libopenssl.o
 
 

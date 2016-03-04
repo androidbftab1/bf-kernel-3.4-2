@@ -26,19 +26,19 @@
 #include "asm/arch/timer.h"
 
 
-static void set_pll_bias(void)
-{
-    __u32 reg_val = 0 ;
-    __u32 i = 0 ;
-    __u32 reg_addr = CCMU_PLL_C0CPUX_BIAS_REG;
-    for(i = 0;i<12;i++)
-    {
-        reg_val = readl(reg_addr + (i<<2));
-        reg_val &= ~(0x1f<<16);
-        reg_val |= 0x04<<16;
-        writel(reg_val,reg_addr + (i<<2));
-    }
-}
+//static void set_pll_bias(void)
+//{
+//    __u32 reg_val = 0 ;
+//    __u32 i = 0 ;
+//    __u32 reg_addr = CCMU_PLL_C0CPUX_BIAS_REG;
+//    for(i = 0;i<12;i++)
+//    {
+//        reg_val = readl(reg_addr + (i<<2));
+//        reg_val &= ~(0x1f<<16);
+//        reg_val |= 0x04<<16;
+//        writel(reg_val,reg_addr + (i<<2));
+//    }
+//}
 /*******************************************************************************
 *函数名称: set_pll
 *函数原型：void set_pll( void )

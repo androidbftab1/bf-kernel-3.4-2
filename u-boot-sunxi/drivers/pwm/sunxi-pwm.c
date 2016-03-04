@@ -207,7 +207,7 @@ int sunxi_pwm_config(int pwm, int duty_ns, int period_ns)
     pwm_debug("PWM _TEST: duty_ns=%d, period_ns=%d, freq=%d, per_scal=%d, period_reg=0x%x\n", duty_ns, period_ns, freq, pre_scal_id, temp);
 
 
-#elif (defined CONFIG_ARCH_SUN8IW3P1 ||  (defined CONFIG_ARCH_SUN8IW5P1) || (defined CONFIG_ARCH_SUN8IW6P1))
+#elif (defined CONFIG_ARCH_SUN8IW3P1 ||  (defined CONFIG_ARCH_SUN8IW5P1) || (defined CONFIG_ARCH_SUN8IW6P1) || (defined CONFIG_ARCH_SUN8IW8P1))
 
     uint pre_scal[11][2] = {{15, 1}, {0, 120}, {1, 180}, {2, 240}, {3, 360}, {4, 480}, {8, 12000}, {9, 24000}, {10, 36000}, {11, 48000}, {12, 72000}};
     uint freq;
@@ -217,6 +217,15 @@ int sunxi_pwm_config(int pwm, int duty_ns, int period_ns)
     uint entire_cycles_max = 65536;
     uint temp;
 
+	if(period_ns < 42) {
+		/* if freq lt 24M, then direct output 24M clock */
+
+		temp = sunxi_pwm_read_reg(pwm);
+		temp |= (0x1 << 9);//pwm bypass
+		sunxi_pwm_write_reg(pwm, temp);
+
+		return 0;
+	}
     if(period_ns < 10667)
         freq = 93747;
     else if(period_ns > 1000000000)

@@ -25,10 +25,12 @@ include $(TOPDIR)/config.mk
 
 LIB	=  $(obj)libgeneric.o
 
-COBJS	+= console.o
-COBJS	+= string.o
-COBJS	+= jmp.o
+COBJS-y	+= console.o
+COBJS-y	+= string.o
+COBJS-y	+= jmp.o
+COBJS-$(CONFIG_BOOT0_I2C) += i2c.o
 
+COBJS	:= $(COBJS-y)
 #COBJS-$(CONFIG_XXXX)	+= xxxx.o
 
 SRCS	:= $(COBJS:.o=.c)

@@ -26,6 +26,6 @@
 
 uint rtc_region_probe_fel_flag(void);
 void rtc_region_clear_fel_flag(void);
-
+void rtc_region_set_flag(u8 flag);
 
 #endif    /*  #ifndef __RTC_REGION_H__  */

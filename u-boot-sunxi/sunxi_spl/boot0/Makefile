@@ -37,7 +37,7 @@ LIBS-y += sunxi_spl/boot0/libs/libgeneric.o
 LIBS-y += sunxi_spl/spl/lib/libgeneric.o
 LIBS-$(CONFIG_BOOT_A15) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/a15/liba15.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libdram.o
-
+LIBS-$(CONFIG_SUNXI_CHIPID) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libchipid.o
 LIBS := $(addprefix $(OBJTREE)/,$(sort $(LIBS-y)))
 
 LIBNAND-$(CONFIG_STORAGE_MEDIA_NAND) += sunxi_spl/boot0/load_nand/libloadnand.o

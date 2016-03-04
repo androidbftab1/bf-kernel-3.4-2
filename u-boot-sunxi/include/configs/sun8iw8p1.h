@@ -38,6 +38,8 @@
 #define UBOOT_PLATFORM		    "1.0.0"
 
 #define CONFIG_TARGET_NAME      sun8iw8p1
+#define ALIGN_SIZE_8K
+
 /*
  * High Level Configuration Options
  */
@@ -47,6 +49,8 @@
 
 //#define CONFIG_FPGA
 #define CONFIG_ARCH_SUN8IW8P1
+#define CONFIG_ARCH_SUN8IW8
+#define CONFIG_VIDEO_SUNXI_V3
 #define CONFIG_SUNXI_SPINOR
 #define CONFIG_SPINOR_LOGICAL_OFFSET        ((256 - 16) * 1024/512)
 #define CONFIG_SUN8IW8P1_SPI 
@@ -69,13 +73,13 @@
 #define PHYS_SDRAM_1_SIZE			(512 << 20)				/* 0x20000000, 512 MB Bank #1 */
 
 #define CONFIG_NONCACHE_MEMORY
-#define CONFIG_NONCACHE_MEMORY_SIZE (1 * 1024 * 1024)
+#define CONFIG_NONCACHE_MEMORY_SIZE (20 * 1024 * 1024)
 /*
  * define malloc space
  * Size of malloc() pool
  * 1MB = 0x100000, 0x100000 = 1024 * 1024
  */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (20 << 20))
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (4 << 20))
 
 
 
@@ -101,16 +105,18 @@
 
 #define SUNXI_RUN_EFEX_ADDR			     (0x01c20400 + 0x108)
 
-#define CONFIG_VIDEO_SUNXI_V2
 
 #define DRAM_PARA_STORE_ADDR		     (CONFIG_SYS_SDRAM_BASE + 0x00800000)
 
-#define SYS_CONFIG_MEMBASE               (CONFIG_SYS_SDRAM_BASE + 0x03000000)
+#define MEM_ADD_SIZE                     (SZ_1M * 2)
 
+#define SYS_CONFIG_MEMBASE               (CONFIG_SYS_SDRAM_BASE + SZ_32M - SZ_1M - MEM_ADD_SIZE )
 #define CONFIG_SMALL_MEMSIZE
-//#define CONFIG_SUNXI_LOGBUFFER
-#define SUNXI_DISPLAY_FRAME_BUFFER_ADDR  (CONFIG_SYS_SDRAM_BASE + 0x06400000)
-#define SUNXI_DISPLAY_FRAME_BUFFER_SIZE  0x01000000
+#define CONFIG_SUNXI_LOGBUFFER
+#define CONFIG_READ_LOGO_FOR_KERNEL
+
+#define SUNXI_DISPLAY_FRAME_BUFFER_ADDR             ((CONFIG_SYS_SDRAM_BASE + SZ_32M -SZ_1M *3 - MEM_ADD_SIZE  ))
+#define SUNXI_DISPLAY_FRAME_BUFFER_SIZE             (SZ_512K * 3 )
 
 #define FEL_BASE                         0xFFFF0020
 /*
@@ -172,7 +178,7 @@
 #define CONFIG_CMD_BOOTA
 #define CONFIG_SUNXI_DMA
 #define CONFIG_CMD_MEMORY
-//#define CONFIG_SUNXI_DISPLAY
+#define CONFIG_SUNXI_DISPLAY
 
 #define CONFIG_SUNXI_AXP
 #define POWER_CONFIG_SUNXI_I2C	//axp communication bus
@@ -182,6 +188,9 @@
 //#define CONFIG_SUNXI_AXP_CONFIG_ONOFF
 
 //#define CONFIG_SUNXI_SCRIPT_REINIT
+
+#define CONFIG_BOOT0_I2C
+#define CONFIG_BOOT0_POWER
 
 #define BOARD_LATE_INIT				/* init the fastboot partitions */
 
@@ -289,7 +298,7 @@
  * if not, below CONFIG_ENV_ADDR and CONFIG_ENV_SIZE will be where to store env.
  * */
 #define CONFIG_ENV_ADDR				(53 << 20)  /* 16M */
-#define CONFIG_ENV_SIZE				(128 << 10)	/* 128KB */
+#define CONFIG_ENV_SIZE				(64 << 10)	/* 64KB */
 #define CONFIG_CMD_SAVEENV
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -324,22 +333,5 @@
 #define CONFIG_CMD_RUN			/* run a command */
 #define CONFIG_CMD_BOOTD		/* boot the default command */
 
-/* Configuaration of Network and net-driver */
-#define CONFIG_CMD_NET
-#define CONFIG_NET_MULTI
-#define CONFIG_SUNXI_GETH
-
-#define CONFIG_CMD_NFS         /* NFS support                  */
-#define CONFIG_CMD_DHCP                /* DHCP Support                 */
-#define CONFIG_CMD_MII         /* MII support                  */
-#define CONFIG_ETHADDR         02:AC:BD:3F:29:0E       /* Ethernet hardware address    */
-#define CONFIG_CMD_PING
-//
-//#define CONFIG_IPADDR	192.168.0.23
-//#define CONFIG_SERVERIP	192.168.0.20
-//#define CONFIG_NETMASK	255.255.255.0
-//#define CONFIG_GATEWAYIP 192.168.0.1
-#define CONFIG_BOOTFILE uImage
-#define CONFIG_LOADADDR        0x40008000
 
 #endif /* __CONFIG_H */

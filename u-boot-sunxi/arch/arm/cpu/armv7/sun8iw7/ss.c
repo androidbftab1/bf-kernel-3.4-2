@@ -22,6 +22,10 @@
 #include "asm/io.h"
 #include "asm/arch/ccmu.h"
 #include "asm/arch/ss.h"
+
+DECLARE_GLOBAL_DATA_PTR;
+
+static int ss_base_mode = 0;
 /*
 ************************************************************************************************************
 *
@@ -159,12 +163,12 @@ static void __ss_encry_decry_end(uint task_id)
 {
 	uint int_en;
 
-	int_en = readl(SS_S_ICR) & 0xf;
+	int_en = readl(SS_ICR) & 0xf;
 	int_en = int_en&(0x01<<task_id);
 	if(int_en!=0)
 	{
 
-	   while((readl(SS_S_ISR)&(0x01<<task_id))==0) {};
+	   while((readl(SS_ISR)&(0x01<<task_id))==0) {};
 	}
 }
 //align & padding
@@ -232,6 +236,11 @@ void sunxi_ss_open(void)
 	reg_val = readl(CCM_AHB1_RST_REG0);
 	reg_val |= 0x1<<5;		//SS AHB clock reset
 	writel(reg_val,CCM_AHB1_RST_REG0);
+
+	if(gd->securemode == SUNXI_NORMAL_MODE)
+	{
+		ss_base_mode = 1;
+	}
 }
 /*
 ************************************************************************************************************
@@ -309,11 +318,11 @@ int  sunxi_sha_calc(u8 *dst_addr, u32 dst_len,
 	flush_cache((uint)sign_buff, 64);
 	flush_cache((uint)src_addr, total_len * 4);
 
-	writel((uint)&task0, SS_S_TDQ); //descriptor address
+	writel((uint)&task0, SS_TDQ); //descriptor address
 	//enable SS end interrupt
-	writel(0x1<<(task0.task_id), SS_S_ICR);
+	writel(0x1<<(task0.task_id), SS_ICR);
 	//start SS
-	writel(0x1, SS_S_TLR);
+	writel(0x1, SS_TLR);
 	//wait end
 	__ss_encry_decry_end(task0.task_id);
 	//copy data
@@ -322,15 +331,15 @@ int  sunxi_sha_calc(u8 *dst_addr, u32 dst_len,
 	    dst_addr[i] = p_sign[i];   //从目的地址读生成的消息摘要
 	}
 	//clear pending
-	reg_val = readl(SS_S_ISR);
+	reg_val = readl(SS_ISR);
 	if((reg_val&(0x01<<task0.task_id))==(0x01<<task0.task_id))
 	{
 	   reg_val &= ~(0x0f);
 	   reg_val |= (0x01<<task0.task_id);
 	}
-	writel(reg_val, SS_S_ISR);
+	writel(reg_val, SS_ISR);
 	//SS engie exit
-	writel(readl(SS_S_TLR) & (~0x1), SS_S_TLR);
+	writel(readl(SS_TLR) & (~0x1), SS_TLR);
 
 	return 0;
 }
@@ -401,25 +410,25 @@ s32 sunxi_rsa_calc(u8 * n_addr,   u32 n_len,
 	flush_cache((uint)temp_src_addr, TEMP_BUFF_LEN);
 	flush_cache((uint)temp_dst_addr, TEMP_BUFF_LEN);
 
-	writel((uint)&task0, SS_S_TDQ); //descriptor address
+	writel((uint)&task0, SS_TDQ); //descriptor address
 	//enable SS end interrupt
-	writel(0x1<<(task0.task_id), SS_S_ICR);
+	writel(0x1<<(task0.task_id), SS_ICR);
 	//start SS
-	writel(0x1, SS_S_TLR);
+	writel(0x1, SS_TLR);
 	//wait end
 	__ss_encry_decry_end(task0.task_id);
 
 	__rsa_padding(dst_addr, p_dst, mod_bit_size/64, mod_bit_size/64);
 	//clear pending
-	reg_val = readl(SS_S_ISR);
+	reg_val = readl(SS_ISR);
 	if((reg_val&(0x01<<task0.task_id))==(0x01<<task0.task_id))
 	{
 	   reg_val &= ~(0x0f);
 	   reg_val |= (0x01<<task0.task_id);
 	}
-	writel(reg_val, SS_S_ISR);
+	writel(reg_val, SS_ISR);
 	//SS engie exit
-	writel(readl(SS_S_TLR) & (~0x1), SS_S_TLR);
+	writel(readl(SS_TLR) & (~0x1), SS_TLR);
 
 	return 0;
 }

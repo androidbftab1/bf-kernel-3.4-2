@@ -15,12 +15,17 @@ START	:= fes1_entry.o
 
 COBJS   += fes1_main.o
 
+DATA 	:= fes_hash.o
+DATA 	+= fes_config.o
+
 SRCS	:= $(START:.o=.S) $(COBJS:.o=.c) $(HEAD:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS) $(COBJS-y) $(SOBJS))
 HEAD    := $(addprefix $(obj),$(HEAD))
 START	:= $(addprefix $(obj),$(START))
+DATA	:= $(addprefix $(obj),$(DATA))
 
-all:	 $(obj).depend $(HEAD) $(START) $(LIB)
+
+all:	 $(obj).depend $(HEAD) $(START) $(LIB) $(DATA)
 
 $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

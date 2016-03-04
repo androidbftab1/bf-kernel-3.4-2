@@ -9,6 +9,14 @@ SECTIONS
 	{
 		main/fes_head.o	(.rodata)
 	}
+	.hash	:
+	{
+		main/fes_hash.o (.data)
+	}
+	.config	:
+	{
+		main/fes_config.o (.data)
+	}
 	.text :
 	{
 		main/fes1_entry.o (.text)
@@ -19,7 +27,7 @@ SECTIONS
 	. = ALIGN(16);
   	.data : { *(.data) }
 
-	. = ALIGN(4);
+        . = ALIGN(4);
 	.bss :
 	{
 	__bss_start = .;

@@ -37,13 +37,13 @@
 #include <sunxi_board.h>
 #include <serial.h>
 #include <asm/arch/usb.h>
+#include <bat.h>
 #if defined(CONFIG_SUNXI_I2C)
 	#include <i2c.h>
 #elif defined(CONFIG_SUNXI_P2WI)
 	#include <p2wi.h>
 #elif defined(CONFIG_SUNXI_RSB)
 	#include <rsb.h>
-#else
 #endif
 
 #if defined(CONFIG_SUNXI_RTC)
@@ -372,6 +372,10 @@ void fastboot_partition_init(void)
 		{
 			sprintf(part_name, "nand%c", 'a' + index);
 		}
+		else if(storage_type == 3)
+		{
+			sprintf(part_name, "spinorp%d", index);
+		}
 		else
 		{
 			if(index == 0)
@@ -650,7 +654,7 @@ int check_android_misc(void)
     //if enter debug mode,set loglevel = 8
     check_debug_mode();
 
-   memset(boot_commond, 0x0, 128);
+	memset(boot_commond, 0x0, 128);
 	strcpy(boot_commond, getenv("bootcmd"));
 	printf("base bootcmd=%s\n", boot_commond);
 	//ÅÐ¶Ï´æ´¢½éÖÊ
@@ -658,6 +662,10 @@ int check_android_misc(void)
 	{
 		sunxi_str_replace(boot_commond, "setargs_nand", "setargs_mmc");
 		printf("bootcmd set setargs_mmc\n");
+	}
+	else if(uboot_spare_head.boot_data.storage_type == 3)
+	{
+		printf("bootcmd set setargs_nor\n");
 	}
 	else
 	{
@@ -1497,6 +1505,75 @@ int change_to_debug_mode(void)
     loglel_change_flag = 1;
     return 0;
 }
+
+#ifdef CONFIG_READ_LOGO_FOR_KERNEL
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :	sunxi_read_bootlogo
+*
+*    parmeters     :
+*
+*    return        : -1 :fail   0:success
+*
+*    note          :	guoyingyang@allwinnertech.com
+*
+*
+************************************************************************************************************
+*/
+sunxi_rgb_store_t rgb_info;
+
+int sunxi_flash_read_bootlogo(u32 start, int buf, const char *part_name)
+{
+	int ret;
+	u32 rblock;
+	u32 start_block = start;
+	void *addr;
+	
+	addr = (void *)buf;
+	start_block = sunxi_partition_get_offset_byname((const char *)part_name);
+	rblock = sunxi_partition_get_size_byname((const char *)part_name);
+    ret = sunxi_flash_read(start_block, rblock, (void *)addr);
+	if(ret != 0) {
+		printf("read bootlogo partition successful,start_block=0x%x,rblock=0x%x ,ret=%d\n",start_block,rblock,ret);
+	}
+	else {
+		printf("read bootlogo partition fail,start_block=0x%x,rblock=0x%x ,ret=%d\n",start_block,rblock,ret);
+	}
+
+	return ret;
+}
+extern int jpegdec(const unsigned char *src_addr, const unsigned char *dst_addr, sunxi_rgb_store_t *rgb_info);
+void sunxi_read_bootlogo(char *part_name)
+{
+    //uint addr;
+#if defined(CONFIG_SUNXI_LOGBUFFER)
+    rgb_info.buffer = (uint *)(CONFIG_SYS_SDRAM_BASE + gd->ram_size - SUNXI_DISPLAY_FRAME_BUFFER_SIZE);
+#else
+    rgb_info.buffer = (uint *)(SUNXI_DISPLAY_FRAME_BUFFER_ADDR);
+#endif
+
+	sunxi_flash_read_bootlogo(0, 0x40000000, part_name);
+
+	//dump_data(0x40000000);
+
+	if(!jpegdec((const unsigned char *)0x40000000, (const unsigned char *)SUNXI_DISPLAY_FRAME_BUFFER_ADDR, &rgb_info))
+	{
+		gd->fb_base = (uint)(rgb_info.buffer);
+		printf("sunxi_read_bootlogo: jpg convert argb  \n");     
+	}
+	else
+	{
+		gd->fb_base = 0;
+        printf("sunxi_read_bootlogo: jpg convert argb fail \n");
+	}
+
+	return ;	
+}
+#endif
+
 /*
 ************************************************************************************************************
 *

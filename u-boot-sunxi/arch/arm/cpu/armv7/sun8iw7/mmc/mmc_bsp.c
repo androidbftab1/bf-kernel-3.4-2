@@ -177,6 +177,20 @@ static int mmc_update_clk(struct mmc *mmc)
 	return 0;
 }
 
+
+static int mmc_update_phase(struct mmc *mmc)
+{
+	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
+	
+	if( (mmchost->mmc_no== 2) && (mmchost->host_func & MMC_HOST_2XMODE_FUNC) )
+	{
+		mmcinfo("mmc re-update_phase\n");
+		return mmc_update_clk(mmc);
+	}
+	
+	return 0;
+}
+
 static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 {
 	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
@@ -237,7 +251,7 @@ static int mmc_2xmode_config_clock(struct mmc *mmc, unsigned clk)
 	unsigned rval = readl(&mmchost->reg->clkcr);
 	unsigned int clkdiv = 0;
 	unsigned int rntsr = readl(&mmchost->reg->ntsr);
-	unsigned int rgctrl = readl(&mmchost->reg->gctrl);
+	//unsigned int rgctrl = readl(&mmchost->reg->gctrl);
 
 	/* Disable Clock */
 	rval &= ~(1 << 16);
@@ -741,6 +755,7 @@ int sunxi_mmc_init(int sdc_no, unsigned bus_width, const normal_gpio_cfg *gpio_i
 	mmc->send_cmd = mmc_send_cmd;
 	mmc->set_ios = mmc_set_ios;
 	mmc->init = mmc_core_init;
+	mmc->update_phase = mmc_update_phase;
 
 	mmc->voltages = MMC_VDD_29_30|MMC_VDD_30_31|MMC_VDD_31_32|MMC_VDD_32_33|
 	                MMC_VDD_33_34|MMC_VDD_34_35|MMC_VDD_35_36;

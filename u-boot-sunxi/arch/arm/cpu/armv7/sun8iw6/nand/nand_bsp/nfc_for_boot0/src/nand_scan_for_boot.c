@@ -38,7 +38,6 @@
 extern  struct __NandStorageInfo_t  NandStorageInfo;
 extern __s32 BOOT_NandGetPara(boot_nand_para_t *param, __u32 size);
 
-
 void _InitNandPhyInfo(boot_nand_para_t *nand_info)
 {
     __u32 i;
@@ -55,7 +54,7 @@ void _InitNandPhyInfo(boot_nand_para_t *nand_info)
     NandStorageInfo.SectorCntPerPage = nand_info->SectorCntPerPage ;
     NandStorageInfo.PageCntPerPhyBlk = nand_info->PageCntPerPhyBlk ;
     NandStorageInfo.BlkCntPerDie     = nand_info->BlkCntPerDie     ;
-    NandStorageInfo.OperationOpt     = nand_info->OperationOpt & (NAND_LSB_PAGE_TYPE 
+    NandStorageInfo.OperationOpt     = nand_info->OperationOpt & (NAND_LSB_PAGE_TYPE
 | NAND_RANDOM | NAND_READ_RETRY);
     NandStorageInfo.FrequencePar     = nand_info->FrequencePar     ;
     NandStorageInfo.EccMode          = nand_info->EccMode          ;
@@ -197,11 +196,11 @@ __u32 NAND_Getlsbpage_type(void)
 
 __u32 Nand_Is_lsb_page(__u32 page)
 {
-	__u32 retry_mode;
+	//__u32 retry_mode;
 	__u32 NAND_LSBPAGE_TYPE;
-	
+
 	NAND_LSBPAGE_TYPE = NAND_Getlsbpage_type();
-	
+
 	if(!NAND_LSBPAGE_TYPE)
 	{
 		return 1;//every page is lsb page
@@ -248,7 +247,7 @@ __u32 Nand_Is_lsb_page(__u32 page)
 			return 0;
 		if(page%2 == 1)
 			return 1;
-		return 0;	
+		return 0;
 	}
 
 	if(NAND_LSBPAGE_TYPE==0x40)//micron 20nm 29f64g08cbaba
@@ -260,8 +259,8 @@ __u32 Nand_Is_lsb_page(__u32 page)
 		if((page%4 == 2)||(page%4 == 3))
 			return 1;
 		return 0;
-	}	
-	
+	}
+
 	if(NAND_LSBPAGE_TYPE==0x41)//micron 20nm 29f32g08cbada
 	{
 		if((page==2)||(page==3))
@@ -271,8 +270,8 @@ __u32 Nand_Is_lsb_page(__u32 page)
 		if((page%4 == 0)||(page%4 == 1))
 			return 1;
 		return 0;
-	}		
-	
+	}
+
 	if(NAND_LSBPAGE_TYPE==0x42)//micron 16nm l95b
 	{
 		if((page==0)||(page==1)||(page==2)||(page==3)||(page==4)||(page==5)||(page==7)||(page==8)||(page==509))
@@ -293,7 +292,7 @@ __u32 Nand_Is_lsb_page(__u32 page)
 		if((page%4 == 2)||(page%4 == 3))
 			return 1;
 		return 0;
-	}	
+	}
 
 
 	if(NAND_LSBPAGE_TYPE==0x30)//sandisk 2xnm 19nm 1ynm
@@ -304,17 +303,18 @@ __u32 Nand_Is_lsb_page(__u32 page)
 			return 0;
 		if(page%2 == 1)
 			return 1;
-		return 0;	
+		return 0;
 	}
 
+	return 0;
 }
 
 
 __u32 NAND_GetLsbblksize(void)
-{	
+{
 	__u32 i,count;
 
-	count=0;	
+	count=0;
 
 	if(NAND_Getlsbpage_type()==0)
 		return NandStorageInfo.PageCntPerPhyBlk*NandStorageInfo.SectorCntPerPage*512;

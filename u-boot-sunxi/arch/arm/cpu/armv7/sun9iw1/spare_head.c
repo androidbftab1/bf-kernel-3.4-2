@@ -25,9 +25,11 @@
 #include <common.h>
 #include <private_uboot.h>
 
+extern char uboot_hash_value[64];
+
 struct spare_boot_head_t  uboot_spare_head = {
 	                                  {
-	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( struct spare_boot_head_t ) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
+	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( struct spare_boot_head_t )+sizeof(uboot_hash_value) + sizeof( int ) - 1 ) / sizeof( int ) -2 ) & 0x00FFFFFF ) ),
 							   		      UBOOT_MAGIC,
 							   		      STAMP_VALUE,
 							   		      ALIGN_SIZE,
@@ -55,8 +57,8 @@ struct spare_boot_head_t  uboot_spare_head = {
 							 	      	  { 0 },		//nand spare data
 							 	      	  { {0} },		//sdcard gpio
 							 	      	  { 0 }, 		//sdcard spare data
-							 	      	  0,
-                                                                          UBOOT_START_SECTOR_IN_SDMMC,
+											-1,
+											UBOOT_START_SECTOR_IN_SDMMC,
 							 	      	  { 0 }			//reserved data
 							 	      }
 							 	  };

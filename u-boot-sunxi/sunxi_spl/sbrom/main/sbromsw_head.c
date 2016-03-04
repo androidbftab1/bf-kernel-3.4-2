@@ -32,9 +32,10 @@
 #include "common.h"
 #include <private_boot0.h>
 #include <private_toc.h>
+extern char sbromsw_hash_value[64];
 
 const boot_file_head_t  sbromsw_head = {
-	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot_file_head_t ) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
+	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot_file_head_t ) + sizeof(sbromsw_hash_value)+ sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
 							   		      TOC0_MAGIC,
 							   		      STAMP_VALUE,
 							   		      ALIGN_SIZE,
@@ -44,7 +45,7 @@ const boot_file_head_t  sbromsw_head = {
 							   		      },
 							   		      CONFIG_TOC0_RET_ADDR,
 							   		      CONFIG_TOC0_RUN_ADDR,
-							   		      EGON_VERSION,
+							   		      0,
 							   		      {
 							   		      	0, 0, '2','.','0','.','0',0
 							   		      },

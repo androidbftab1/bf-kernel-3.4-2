@@ -23,6 +23,7 @@
 #include "openssl_ext.h"
 #include <asm/arch/ss.h>
 
+extern void sid_read_rotpk(void *dst) ;
 int sunxi_bytes_merge(u8 *dst, u32 dst_len, u8 *src, uint src_len);
 /*
 ************************************************************************************************************
@@ -566,6 +567,7 @@ int sunxi_certif_probe_signature(X509 *x, u8 *sign)
 
 	return 0;
 }
+
 /*
 ************************************************************************************************************
 *

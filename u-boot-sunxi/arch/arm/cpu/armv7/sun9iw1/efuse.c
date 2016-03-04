@@ -39,7 +39,7 @@
 *
 ************************************************************************************************************
 */
-static void sid_program_key(uint key_index, uint key_value)
+void sid_program_key(uint key_index, uint key_value)
 {
 	uint reg_val;
 
@@ -77,7 +77,7 @@ static void sid_program_key(uint key_index, uint key_value)
 *
 ************************************************************************************************************
 */
-static uint sid_read_key(uint key_index)
+uint sid_read_key(uint key_index)
 {
 	uint reg_val;
 

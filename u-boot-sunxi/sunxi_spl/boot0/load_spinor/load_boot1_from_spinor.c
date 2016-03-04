@@ -21,6 +21,9 @@
 #include "spare_head.h"
 #include "private_boot0.h"
 #include "private_uboot.h"
+#include <asm/arch/spinor.h>
+#include "../libs/sbrom_libs.h"
+
 extern const boot0_file_head_t  BT0_head;
 
 /*
@@ -44,7 +47,7 @@ int load_boot1_from_spinor(void)
 	__u32 length;
 	struct spare_boot_head_t  *bfh;
 
-	if(spinor_init())
+	if(spinor_init(0))
 	{
 		printf("spinor init fail\n");
 

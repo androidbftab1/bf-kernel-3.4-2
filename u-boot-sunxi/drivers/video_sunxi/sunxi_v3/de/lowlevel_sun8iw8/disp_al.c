@@ -1,6 +1,16 @@
 #include "disp_al.h"
 #include "de_hal.h"
 
+struct disp_al_private_data
+{
+	u32 output_type[DEVICE_NUM];
+	u32 output_mode[DEVICE_NUM];//indicate mode for tv/hdmi, lcd_if for lcd
+	u32 output_cs[DEVICE_NUM];//index according to device
+};
+
+static struct disp_al_private_data al_priv;
+
+
 int disp_al_layer_apply(unsigned int disp, struct disp_layer_config_data *data, unsigned int layer_num)
 {
 	return de_al_lyr_apply(disp, data, layer_num);
@@ -136,7 +146,7 @@ int disp_al_smbl_get_status(unsigned int disp)
 }
 
 static struct lcd_clk_info clk_tbl[] = {
-	{LCD_IF_HV,     6, 1, 1},
+	{LCD_IF_HV,     20, 1, 1},
 	{LCD_IF_CPU,   12, 1, 1},
 	{LCD_IF_LVDS,   7, 1, 1},
 	{LCD_IF_DSI,    4, 1, 4},
@@ -177,7 +187,94 @@ int disp_al_lcd_get_clk_info(u32 screen_id, struct lcd_clk_info *info, disp_pane
 	return 0;
 }
 
-int disp_al_lcd_cfg(u32 screen_id, disp_panel_para * panel)
+int disp_al_vdevice_cfg(u32 screen_id, disp_video_timings *video_info, disp_vdevice_interface_para *para)
+{
+	struct lcd_clk_info clk_info;
+	disp_panel_para info;
+
+	al_priv.output_type[screen_id] = (u32)DISP_OUTPUT_TYPE_LCD;
+	al_priv.output_mode[screen_id] = (u32)para->intf;
+
+	memset(&info, 0, sizeof(disp_panel_para));
+	info.lcd_if = para->intf;
+	info.lcd_x = video_info->x_res;
+	info.lcd_y = video_info->y_res;
+	info.lcd_hv_if = (disp_lcd_hv_if)para->sub_intf;
+	info.lcd_dclk_freq = video_info->pixel_clk;
+	info.lcd_ht = video_info->hor_total_time;
+	info.lcd_hbp = video_info->hor_back_porch + video_info->hor_sync_time;
+	info.lcd_hspw = video_info->hor_sync_time;
+	info.lcd_vt = video_info->ver_total_time;
+	info.lcd_vbp = video_info->ver_back_porch + video_info->ver_sync_time;
+	info.lcd_vspw = video_info->ver_sync_time;
+	info.lcd_hv_syuv_fdly = para->fdelay;
+	if(LCD_HV_IF_CCIR656_2CYC == info.lcd_hv_if)
+		info.lcd_hv_syuv_seq = para->sequence;
+	else
+		info.lcd_hv_srgb_seq = para->sequence;
+	tcon_init(screen_id);
+	disp_al_lcd_get_clk_info(screen_id, &clk_info, &info);
+	clk_info.tcon_div = 11;//fixme
+	tcon0_set_dclk_div(screen_id, clk_info.tcon_div);
+
+	if(0 != tcon0_cfg(screen_id, &info))
+		DE_WRN("lcd cfg fail!\n");
+	else
+		DE_INF("lcd cfg ok!\n");
+
+	return 0;
+}
+
+int disp_al_vdevice_enable(u32 screen_id)
+{
+	disp_panel_para panel;
+
+	memset(&panel, 0, sizeof(disp_panel_para));
+	panel.lcd_if = LCD_IF_HV;
+	tcon0_open(screen_id, &panel);
+
+	return 0;
+}
+
+int disp_al_vdevice_disable(u32 screen_id)
+{
+	tcon0_close(screen_id);
+	tcon_exit(screen_id);
+
+	return 0;
+}
+
+int disp_al_device_get_cur_line(u32 screen_id)
+{
+	u32 tcon_index = 0;
+
+	tcon_index = (al_priv.output_type[screen_id] == (u32)DISP_OUTPUT_TYPE_LCD)?0:1;
+	return tcon_get_cur_line(screen_id, tcon_index);
+}
+
+int disp_al_device_get_start_delay(u32 screen_id)
+{
+	u32 tcon_index = 0;
+
+	tcon_index = (al_priv.output_type[screen_id] == (u32)DISP_OUTPUT_TYPE_LCD)?0:1;
+	return tcon_get_start_delay(screen_id, tcon_index);
+}
+
+int disp_al_device_query_irq(u32 screen_id)
+{
+	int ret = 0;
+	int irq_id = 0;
+
+	irq_id = (al_priv.output_type[screen_id] == (u32)DISP_OUTPUT_TYPE_LCD)?\
+		LCD_IRQ_TCON0_VBLK:LCD_IRQ_TCON1_VBLK;
+	ret = tcon_irq_query(screen_id, irq_id);
+
+	return ret;
+}
+
+
+
+int disp_al_lcd_cfg(u32 screen_id, disp_panel_para * panel, panel_extend_para *extend_panel)
 {
 	struct lcd_clk_info info;
 
@@ -189,6 +286,7 @@ int disp_al_lcd_cfg(u32 screen_id, disp_panel_para * panel)
 #endif
 	tcon0_set_dclk_div(screen_id, info.tcon_div);
 
+	tcon0_cfg_ext(screen_id, extend_panel);
 	if(0 != tcon0_cfg(screen_id, panel))
 		DE_WRN("lcd cfg fail!\n");
 	else

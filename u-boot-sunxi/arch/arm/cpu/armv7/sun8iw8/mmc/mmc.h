@@ -28,9 +28,6 @@
 #define MMC_VERSION_4_5		(MMC_VERSION_MMC | 0x45)
 #define MMC_VERSION_5_0		(MMC_VERSION_MMC | 0x50)
 
-
-
-
 #define MMC_MODE_HS		0x001
 #define MMC_MODE_HS_52MHz	0x010
 #define MMC_MODE_4BIT		0x100
@@ -244,33 +241,6 @@ struct mmc_csd
 };
 */
 
-struct mmc_cmd {
-	unsigned cmdidx;
-	unsigned resp_type;
-	unsigned cmdarg;
-	unsigned response[4];
-	unsigned flags;
-};
-
-struct mmc_data {
-	union {
-		char *dest;
-		const char *src; /* src buffers don't get written to */
-	} b;
-	unsigned flags;
-	unsigned blocks;
-	unsigned blocksize;
-};
-
-
-struct tuning_sdly{
-	//u8 sdly_400k;
-	u8 sdly_25M;
-	u8 sdly_50M;
-	u8 sdly_100M;
-	u8 sdly_200M;
-};//size can not over 256 now
-
 struct mmc {
 	char name[32];
 	void *priv;
@@ -308,12 +278,5 @@ struct mmc {
 };
 
 #define mmc_host_is_spi(mmc)	((mmc)->host_caps & MMC_MODE_SPI)
-
-int mmc_register(int dev_num, struct mmc *mmc);
-int mmc_unregister(int dev_num);
-struct mmc *find_mmc_device(int dev_num);
-int mmc_berase(int dev_num, unsigned long start, unsigned blkcnt);
-unsigned long mmc_bwrite(int dev_num, unsigned long start, unsigned blkcnt, const void*src);
-unsigned long mmc_bread(int dev_num, unsigned long start, unsigned blkcnt, void *dst);
 
 #endif /* _MMC_H_ */

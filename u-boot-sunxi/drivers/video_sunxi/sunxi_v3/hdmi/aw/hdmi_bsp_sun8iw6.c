@@ -365,10 +365,8 @@ int bsp_hdmi_video(struct video_para *video)
 	switch(glb_video.vic)
 	{
 		case 2:
-		case 4:
 		case 6:
 		case 17:
-		case 19:
 		case 21:
 			video->csc = BT601;
 			break;
@@ -407,7 +405,6 @@ int bsp_hdmi_video(struct video_para *video)
 	hdmi_write(0x8400, 0x07);
 	hdmi_write(0x8401, 0x00);
 	hdmi_write(0x0402, 0x47);
-
 	hdmi_write(0x0800, 0x01);
 	hdmi_write(0x0801, 0x07);
 	hdmi_write(0x8800, 0x00);
@@ -441,14 +438,14 @@ int bsp_hdmi_video(struct video_para *video)
 		hdmi_write(0x10012,0x41);
 		hdmi_write(0x10013,0x57);
 		hdmi_write(0x4045, video->is_yuv ? 0x02 : 0x00);
-		if(ptbl[id].para[16] == 0)
+		if(ptbl[id].para[17] == 0)
 			hdmi_write(0xC044, (video->csc << 6) | 0x18);
-		else if(ptbl[id].para[16] == 1)
+		else if(ptbl[id].para[17] == 1)
 			hdmi_write(0xC044, (video->csc << 6) | 0x28);
 		else
 			hdmi_write(0xC044, (video->csc << 6) | 0x08);
 
-		hdmi_write(0xC045, 0x00);
+		hdmi_write(0xC045, video->is_yuv ? 0x00 : 0x08);
 		hdmi_write(0x4046, ptbl[id].para[0]&0x7f);
 	}
 
@@ -591,8 +588,28 @@ int bsp_hdmi_ddc_read(char cmd,char pointer,char offset,int nbyte,char * pbuf)
 	unsigned int to_cnt;
 	int ret = 0;
 
+	hdmi_write(0x10010,0x45);
+	hdmi_write(0x10011,0x45);
+	hdmi_write(0x10012,0x52);
+	hdmi_write(0x10013,0x54);
+	hdmi_write(0x4EE1, 0x00);
+
+	to_cnt = 50;
+	while((hdmi_read(0x4EE1)&0x01)!=0x01)
+	{
+		hdmi_udelay(10);
+		to_cnt--;	//wait for 500us for timeout
+		if(to_cnt == 0)
+		{
+			printf("ddc rst timeout\n");
+			break;
+		}
+	}
+
 	hdmi_write(0x8EE3, 0x05);
 	hdmi_write(0x0EE3, 0x08);
+	hdmi_write(0x4EE2, 0xd8);
+	hdmi_write(0xCEE2, 0xfe);
 
 	to_cnt = 10;
 	while(nbyte > 0)
@@ -603,16 +620,15 @@ int bsp_hdmi_ddc_read(char cmd,char pointer,char offset,int nbyte,char * pbuf)
 		hdmi_write(0x4EE0, 0x60 >> 1);
 		hdmi_write(0xCEE0, pointer);
 		hdmi_write(0x0EE2, 0x02);
-		hdmi_write(0x10010,0x45);
-		hdmi_write(0x10011,0x45);
-		hdmi_write(0x10012,0x52);
-		hdmi_write(0x10013,0x54);
+
 		while(1)
 	  {
 			to_cnt--;	//wait for 10ms for timeout
 			if(to_cnt == 0)
+			{
+				printf("ddc read timeout, byte cnt = %d\n",nbyte);
 				break;
-
+			}
 			if( (hdmi_read(0x0013) & 0x02) == 0x02)
 			{
 				hdmi_write(0x0013, hdmi_read(0x0013) & 0x02);
@@ -630,7 +646,6 @@ int bsp_hdmi_ddc_read(char cmd,char pointer,char offset,int nbyte,char * pbuf)
 	  nbyte --;
 	  off ++;
 	}
-
 	hdmi_write(0x10010,0x52);
 	hdmi_write(0x10011,0x54);
 	hdmi_write(0x10012,0x41);

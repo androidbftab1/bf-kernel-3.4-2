@@ -34,6 +34,8 @@ LIBS-y += sunxi_spl/fes_init/main/libmain.o
 LIBS-y += sunxi_spl/spl/lib/libgeneric.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libdram.o
 
+LIBS-$(CONFIG_SUNXI_CHIPID) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libchipid.o
+
 LIBS := $(addprefix $(OBJTREE)/,$(sort $(LIBS-y)))
 
 

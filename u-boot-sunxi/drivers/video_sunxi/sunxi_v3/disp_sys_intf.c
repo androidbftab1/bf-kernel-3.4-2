@@ -292,7 +292,9 @@ int disp_sys_gpio_set_value(u32 p_handler, u32 value_to_gpio, const char *gpio_n
 int disp_sys_power_enable(char *name)
 {
 	int ret = 0;
-
+	if(0 == strlen(name)) {
+		return 0;
+	}
 	ret = axp_set_supply_status_byregulator(name, 1);
 	printf("enable power %s, ret=%d\n", name, ret);
 	return 0;
@@ -354,7 +356,7 @@ int disp_sys_pwm_set_polarity(int p_handler, int polarity)
 	return ret;
 }
 
-static char *init_clks[] = {"pll_de", "pll_video1", "pll_video"};
+static char *init_clks[] = {"pll_de", "pll_video1", "pll_video", "pll_periph0"};
 
 int disp_sys_clk_init(void)
 {
@@ -419,6 +421,18 @@ int disp_sys_clk_set_rate(const char *id, unsigned long rate)
 		/* fix m(8): rate = 24 * n / m */
 		unsigned int factor_n = rate / 3000000;
 		unsigned int div_m = 8;
+#if defined(CONFIG_ARCH_SUN8IW8)
+		unsigned int reg_val = readl(0x01c20010);
+		if(297000000 == rate)
+			writel(0x02006207, 0x01c20010);
+		else if(270000000 == rate)
+			writel(0x00006207, 0x01c20010);
+		else {
+			factor_n &= 0xff;
+			reg_val |= ((factor_n -1) << 8) | (div_m-1);
+			writel(0x83003507, 0x01c20010);
+		}
+#else
 		unsigned int reg_val = 0x03000000;
 
 		if(297000000 == rate)
@@ -430,6 +444,7 @@ int disp_sys_clk_set_rate(const char *id, unsigned long rate)
 			reg_val |= ((factor_n -1) << 8) | (div_m-1);
 			writel(reg_val, 0x01c20010);
 		}
+#endif
 	} else if(!strcmp(id, "pll_de")) {
 #if defined(CONFIG_ARCH_SUN8IW6)
 		/* fix div2(1), div1(0): rate = 24 * n / (div2+1) / (div1+1) */
@@ -450,7 +465,16 @@ int disp_sys_clk_set_rate(const char *id, unsigned long rate)
 		reg_val |= ((factor_n-1) << 8) | (div_m-1);
 
 		writel(reg_val, 0x01c20048);
+
 #endif
+	} else if(!strcmp(id, "pll_periph0")) { //sun8iw8
+		unsigned int factor_n = rate / 24000000;
+		unsigned int div_k = 2;
+		unsigned int reg_val = readl(0x01c20028);
+		factor_n &= 0xff;
+		reg_val |= ((factor_n-1) << 8) | ((div_k-1) << 4);
+		writel(reg_val, 0x01c20028);
+
 	} else if(!strcmp(id, "tcon0")) {
 		unsigned int div = 297000000 / rate;
 		unsigned int reg_val = readl(0x01c20118);
@@ -458,6 +482,11 @@ int disp_sys_clk_set_rate(const char *id, unsigned long rate)
 		reg_val &= ~0xf;
 		reg_val |= (div-1);
 
+		writel(reg_val, 0x01c20118);
+	} else if(!strcmp(id, "lcd0")) {
+		unsigned int reg_val = readl(0x01c20118);
+
+		reg_val &= ~0xf;
 		writel(reg_val, 0x01c20118);
 	} else if(!strcmp(id, "lcd1")) {
 		unsigned int div = 297000000 / rate;
@@ -513,6 +542,24 @@ unsigned long disp_sys_clk_get_rate(const char *id)
 
 		factor_n = (reg_val >> 8) & 0xff;
 		rate = 12000000 * factor_n;
+	}else if(!strcmp(id, "pll_video")) { //add for sun8iw8
+		/* fix m(8): rate = 24 * n / m */
+		unsigned int factor_n;
+		unsigned int div_m;
+		unsigned int reg_val = readl(0x01c20010);
+
+		factor_n = (reg_val >> 8) & 0xef;
+		div_m = reg_val & 0xf;
+		rate = 24000000 * (factor_n+1) /(div_m+1);
+	}else if(!strcmp(id, "pll_periph0")) { //add for sun8iw8
+		unsigned int factor_n;
+		unsigned int div_k;
+		unsigned int reg_val = readl(0x01c20028);
+
+		factor_n = (reg_val >> 8) & 0x1f;
+		div_k = (reg_val >> 4) & 0x3;
+		rate = 24000000 * (factor_n+1) /(div_k+1) /2;
+
 	}
 	return rate;
 }
@@ -536,6 +583,12 @@ int disp_sys_clk_enable(const char *id)
 		writel(reg_val, 0x01c20010);
 		/* wait for pll stable */
 		__usdelay(100);
+	} else if(!strcmp(id, "pll_video")) {
+		reg_val = readl(0x01c20010);
+		reg_val |= 0x80000000;
+		writel(reg_val, 0x01c20010);
+		/* wait for pll stable */
+		__usdelay(100);
 	} else if(!strcmp(id, "pll_video1")) {
 		reg_val = readl(0x01c2004c);
 
@@ -548,6 +601,12 @@ int disp_sys_clk_enable(const char *id)
 
 		reg_val |= 0x80000000;
 		writel(reg_val, 0x01c20048);
+		/* wait for pll stable */
+		__usdelay(100);
+	} else if(!strcmp(id, "pll_periph0")) {
+		reg_val = readl(0x01c20028);
+		reg_val |= 0x80000000;
+		writel(reg_val, 0x01c20028);
 		/* wait for pll stable */
 		__usdelay(100);
 	} else if(!strcmp(id, "lcd0")) {
@@ -605,11 +664,17 @@ int disp_sys_clk_enable(const char *id)
 		writel(1, 0x01c202c8);
 	} else if(!strcmp(id, "de")) {
 		/* pll_de */
+#if defined(CONFIG_ARCH_SUN8IW8)
+		reg_val = readl(0x01c20028);
+		reg_val |= 0x80000001;
+		writel(reg_val, 0x01c20028);
+#else
 		reg_val = readl(0x01c20048);
 
 		reg_val |= 0x80000000;
 		writel(reg_val, 0x01c20048);
 		/* wait for pll stable */
+#endif
 		__usdelay(100);
 
 		/* reset */
@@ -623,6 +688,10 @@ int disp_sys_clk_enable(const char *id)
 #if defined(CONFIG_ARCH_SUN8IW7)
 		/* module gating */
 		reg_val = 0x81000001;
+		writel(reg_val, 0x01c20104);
+
+#elif defined(CONFIG_ARCH_SUN8IW8)
+		reg_val = 0x82000001;
 		writel(reg_val, 0x01c20104);
 #endif
 	} else if(!strcmp(id, "mipi_dsi0")) {
@@ -749,6 +818,13 @@ int disp_sys_clk_disable(const char *id)
 
 		reg_val &= ~0x80000000;
 		writel(reg_val, 0x01c20048);
+	} else if(!strcmp(id, "pll_periph0")) {
+		reg_val = readl(0x01c20028);
+
+		reg_val &= ~0x80000000;
+		writel(reg_val, 0x01c20028);
+		/* wait for pll stable */
+		__usdelay(100);
 	} else if(!strcmp(id, "lcd0")) {
 		/* module gating */
 		reg_val = readl(0x01c20118);

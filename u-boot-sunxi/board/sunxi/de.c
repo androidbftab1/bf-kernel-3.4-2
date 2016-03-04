@@ -30,14 +30,20 @@
 #else
 #endif
 #include <sys_config.h>
+#include <bmp_layout.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_SUNXI_DISPLAY
 static __u32 screen_id = 0;
 static __u32 disp_para = 0;
+static __u32 init_disp = 0;
+static __u32 saved_tv_vdid = 0;
 
 int get_display_resolution(int display_type);
+int get_saved_hdmi_vendor_id(void);
+int get_hdmi_vendor_id(int sel);
+int reset_hdmi_mode(int sel,int mode);
 
 #if (defined CONFIG_VIDEO_SUNXI_V1)
 extern __s32 disp_delay_ms(__u32 ms);
@@ -45,6 +51,7 @@ extern __s32 disp_delay_ms(__u32 ms);
 #define MY_GET_HDMI_HPD_STATUS DISP_CMD_HDMI_GET_HPD_STATUS
 #define MY_GET_CVBS_HPD_STATUS 0
 #define MY_HDMI_SUPPORT_MODE DISP_CMD_HDMI_SUPPORT_MODE
+#define MY_HDMI_GET_EDID 0
 
 #elif (defined CONFIG_VIDEO_SUNXI_V2)
 extern __s32 bsp_disp_delay_ms(u32 ms);
@@ -52,6 +59,7 @@ extern __s32 bsp_disp_delay_ms(u32 ms);
 #define MY_GET_HDMI_HPD_STATUS DISP_CMD_HDMI_GET_HPD_STATUS
 #define MY_GET_CVBS_HPD_STATUS 0
 #define MY_HDMI_SUPPORT_MODE DISP_CMD_HDMI_SUPPORT_MODE
+#define MY_HDMI_GET_EDID 0
 
 #else //(defined CONFIG_VIDEO_SUNXI_V3)
 extern s32 disp_delay_ms(u32 ms);
@@ -59,6 +67,7 @@ extern s32 disp_delay_ms(u32 ms);
 #define MY_GET_HDMI_HPD_STATUS DISP_HDMI_GET_HPD_STATUS
 #define MY_GET_CVBS_HPD_STATUS DISP_TV_GET_HPD_STATUS
 #define MY_HDMI_SUPPORT_MODE DISP_HDMI_SUPPORT_MODE
+#define MY_HDMI_GET_EDID DISP_HDMI_GET_EDID
 
 #endif
 
@@ -424,7 +433,6 @@ int board_display_layer_para_set(void)
 */
 int board_display_show_until_lcd_open(int display_source)
 {
-		printf("%s\n", __func__);
     if(!display_source)
     {
     	board_display_wait_lcd_open();
@@ -596,6 +604,192 @@ int board_display_reset_scn_win(disp_window const *src_win,uint const width, uin
 *
 ************************************************************************************************************
 */
+
+int card_board_display_framebuffer_set(int width, int height, int bitcount, void *buffer,int count)
+{
+#if defined(CONFIG_VIDEO_SUNXI_V3)
+	disp_layer_config *layer_para;
+	uint screen_width, screen_height;
+	uint arg[4];
+	int full = 0;
+
+	if(!gd->layer_para)
+	{
+		layer_para = (disp_layer_config *)malloc(sizeof(disp_layer_config));
+		if(!layer_para)
+		{
+			tick_printf("sunxi display error: unable to malloc memory for layer\n");
+
+			return -1;
+		}
+	}
+	else
+	{
+		layer_para = (disp_layer_config *)gd->layer_para;
+	}
+
+	if(script_parser_fetch("boot_disp", "output_full", &full, 1) < 0)
+	{
+		//tick_printf("fetch script data boot_disp.output_disp fail\n");
+		full = 0;
+	}
+
+	arg[0] = screen_id;
+	screen_width = disp_ioctl(NULL, DISP_GET_SCN_WIDTH, (void*)arg);
+	screen_height = disp_ioctl(NULL, DISP_GET_SCN_HEIGHT, (void*)arg);
+	//tick_printf("screen_id =%d, screen_width =%d, screen_height =%d\n", screen_id, screen_width, screen_height);
+	memset((void *)layer_para, 0, sizeof(disp_layer_config));
+	layer_para->info.fb.addr[0]		= (uint)buffer;
+	//tick_printf("frame buffer address %x\n", (uint)buffer);
+#if defined(CONFIG_ARCH_SUN8IW8)
+	layer_para->channel = 2;
+#else
+	layer_para->channel = 1;
+#endif
+	layer_para->layer_id = 0;
+	layer_para->info.fb.format		= (bitcount == 24)? DISP_FORMAT_RGB_888:DISP_FORMAT_ARGB_8888;
+	layer_para->info.fb.size[0].width	= width;
+	layer_para->info.fb.size[0].height	= height;
+	layer_para->info.fb.crop.x	= 0;
+	layer_para->info.fb.crop.y	= 0;
+	layer_para->info.fb.crop.width	= ((unsigned long long)width) << 32;
+	layer_para->info.fb.crop.height	= ((unsigned long long)height) << 32;
+	layer_para->info.fb.flags = DISP_BF_NORMAL;
+	layer_para->info.fb.scan = DISP_SCAN_PROGRESSIVE;
+	debug("bitcount = %d\n", bitcount);
+	layer_para->info.mode     = LAYER_MODE_BUFFER;
+	layer_para->info.alpha_mode    = 1;
+	layer_para->info.alpha_value   = 0xff;
+	if(full) {
+		layer_para->info.screen_win.x	= 0;
+		layer_para->info.screen_win.y	= 0;
+		layer_para->info.screen_win.width	= screen_width;
+		layer_para->info.screen_win.height	= screen_height;
+	} else {
+		layer_para->info.screen_win.x	= (screen_width - width) / 2;
+		layer_para->info.screen_win.y	=  height / 2;
+		layer_para->info.screen_win.width	= count;
+		layer_para->info.screen_win.height	= 20;
+	}
+	layer_para->info.b_trd_out		= 0;
+	layer_para->info.out_trd_mode 	= 0;
+
+#elif defined(CONFIG_VIDEO_SUNXI_V2)
+	disp_layer_info *layer_para;
+	uint screen_width, screen_height;
+	uint arg[4];
+
+	if(!gd->layer_para)
+	{
+		layer_para = (disp_layer_info *)malloc(sizeof(disp_layer_info));
+		if(!layer_para)
+		{
+			tick_printf("sunxi display error: unable to malloc memory for layer\n");
+
+			return -1;
+		}
+	}
+	else
+	{
+		layer_para = (disp_layer_info *)gd->layer_para;
+	}
+	arg[0] = screen_id;
+	screen_width = disp_ioctl(NULL, DISP_CMD_GET_SCN_WIDTH, (void*)arg);
+	screen_height = disp_ioctl(NULL, DISP_CMD_GET_SCN_HEIGHT, (void*)arg);
+	printf("screen_id =%d, screen_width =%d, screen_height =%d\n", screen_id, screen_width, screen_height);
+	memset((void *)layer_para, 0, sizeof(disp_layer_info));
+	layer_para->fb.addr[0]		= (uint)buffer;
+	debug("frame buffer address %x\n", (uint)buffer);
+	layer_para->fb.format		= (bitcount == 24)? DISP_FORMAT_RGB_888:DISP_FORMAT_ARGB_8888;
+	layer_para->fb.size.width	= width;
+	layer_para->fb.size.height	= height;
+	debug("bitcount = %d\n", bitcount);
+	layer_para->fb.b_trd_src 	= 0;
+	layer_para->fb.trd_mode		= 0;
+	layer_para->ck_enable		= 0;
+	layer_para->mode            = DISP_LAYER_WORK_MODE_NORMAL;
+	layer_para->alpha_mode 		= 1;
+	layer_para->alpha_value		= 0xff;
+	layer_para->pipe 			= 0;
+	layer_para->screen_win.x		= (screen_width - width) / 2;
+	layer_para->screen_win.y		= (screen_height - height) / 2;
+	layer_para->screen_win.width	= width;
+	layer_para->screen_win.height	= height;
+	layer_para->b_trd_out		= 0;
+	layer_para->out_trd_mode 	= 0;
+#else
+	__disp_layer_info_t *layer_para;
+	uint screen_width, screen_height;
+	uint arg[4];
+
+	if(!gd->layer_para)
+	{
+		layer_para = (__disp_layer_info_t *)malloc(sizeof(__disp_layer_info_t));
+		if(!layer_para)
+		{
+			tick_printf("sunxi display error: unable to malloc memory for layer\n");
+
+			return -1;
+		}
+	}
+	else
+	{
+		layer_para = (__disp_layer_info_t *)gd->layer_para;
+	}
+	arg[0] = screen_id;
+	screen_width = disp_ioctl(NULL, DISP_CMD_SCN_GET_WIDTH, (void*)arg);
+	screen_height = disp_ioctl(NULL, DISP_CMD_SCN_GET_HEIGHT, (void*)arg);
+	debug("screen_width =%d, screen_height =%d\n", screen_width, screen_height);
+	memset((void *)layer_para, 0, sizeof(__disp_layer_info_t));
+	layer_para->fb.addr[0]		= (uint)buffer;
+	debug("frame buffer address %x\n", (uint)buffer);
+	layer_para->fb.size.width	= width;
+	layer_para->fb.size.height	= height;
+	layer_para->fb.mode			= DISP_MOD_INTERLEAVED;
+	layer_para->fb.format		= (bitcount == 24)? DISP_FORMAT_RGB888:DISP_FORMAT_ARGB8888;
+	debug("bitcount = %d\n", bitcount);
+	layer_para->fb.br_swap		= 0;
+	layer_para->fb.seq			= DISP_SEQ_ARGB;
+	layer_para->fb.b_trd_src 	= 0;
+	layer_para->fb.trd_mode		= 0;
+	layer_para->ck_enable		= 0;
+	layer_para->mode            = DISP_LAYER_WORK_MODE_NORMAL;
+	layer_para->alpha_en 		= 1;
+	layer_para->alpha_val		= 0xff;
+	layer_para->pipe 			= 0;
+	layer_para->src_win.x		= 0;
+	layer_para->src_win.y		= 0;
+	layer_para->src_win.width	= width;
+	layer_para->src_win.height	= height;
+	layer_para->scn_win.x		= (screen_width - width) / 2;
+	layer_para->scn_win.y		= (screen_height - height) / 2;
+	layer_para->scn_win.width	= width;
+	layer_para->scn_win.height	= height;
+	layer_para->b_trd_out		= 0;
+	layer_para->out_trd_mode 	= 0;
+#endif
+
+	gd->layer_para = (uint)layer_para;
+
+	return 0;
+}
+
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :
+*
+*    parmeters     :
+*
+*    return        :
+*
+*    note          :
+*
+*
+************************************************************************************************************
+*/
 int board_display_framebuffer_set(int width, int height, int bitcount, void *buffer)
 {
 #if defined(CONFIG_VIDEO_SUNXI_V3)
@@ -632,7 +826,14 @@ int board_display_framebuffer_set(int width, int height, int bitcount, void *buf
 	memset((void *)layer_para, 0, sizeof(disp_layer_config));
 	layer_para->info.fb.addr[0]		= (uint)buffer;
 	tick_printf("frame buffer address %x\n", (uint)buffer);
+    gd->fb_base = (uint)buffer - sizeof(bmp_header_t);
+
+#if defined(CONFIG_ARCH_SUN8IW8)
+	layer_para->channel = 2;
+#else
 	layer_para->channel = 1;
+#endif
+
 	layer_para->layer_id = 0;
 	layer_para->info.fb.format		= (bitcount == 24)? DISP_FORMAT_RGB_888:DISP_FORMAT_ARGB_8888;
 	layer_para->info.fb.size[0].width	= width;
@@ -687,6 +888,7 @@ int board_display_framebuffer_set(int width, int height, int bitcount, void *buf
 	memset((void *)layer_para, 0, sizeof(disp_layer_info));
 	layer_para->fb.addr[0]		= (uint)buffer;
 	debug("frame buffer address %x\n", (uint)buffer);
+	gd->fb_base = (uint)buffer - sizeof(bmp_header_t);
 	layer_para->fb.format		= (bitcount == 24)? DISP_FORMAT_RGB_888:DISP_FORMAT_ARGB_8888;
 	layer_para->fb.size.width	= width;
 	layer_para->fb.size.height	= height;
@@ -832,99 +1034,104 @@ int board_display_framebuffer_change(void *buffer)
 }
 
 #if ((defined CONFIG_ARCH_HOMELET) && ((defined CONFIG_ARCH_SUN9IW1P1) || (defined CONFIG_ARCH_SUN8IW6P1) || (defined CONFIG_ARCH_SUN8IW7P1)))
-#define HDMI_INLINE_DEFAULT_MODE DISP_TV_MOD_720P_50HZ
 int board_display_device_open(void)
 {
 	int  value;
 	int  ret = 0;
 	int output_type = 0;
 	int output_mode = 0;
+	int hdmi_used;
 	int cvbs_used;
 	int lcd_channel;
 	int hdmi_channel;
 	int cvbs_channel;
 	int hdmi_connect = 0;
 	int cvbs_connect = 0;
-	int hdmi_mode_check = 1;
+	int hdmi_mode = 0;
+	int cvbs_mode = 0;
 	unsigned long arg[4] = {0};
 	int i;
 
-	if(script_parser_fetch("boot_disp", "auto_hpd", &value, 1) < 0)
-	{
+	if(script_parser_fetch("boot_disp", "auto_hpd", &value, 1) < 0){
 		tick_printf("###fetch script data boot_disp.auto_hpd fail! This must be configed!###\n");
 		return -1;
 	}
 	if(script_parser_fetch("boot_disp", "hdmi_channel", &hdmi_channel, 1) < 0){
 		printf("###fetch script data boot_disp.hdmi_channel fail! it must be conifged in homlet###\n");
-		return -1;
-	}
+		hdmi_used = 0;
+	} else {
+		hdmi_used = 1;
+		saved_tv_vdid = get_saved_hdmi_vendor_id();
+		if(0 == (hdmi_mode = get_display_resolution(DISP_OUTPUT_TYPE_HDMI)))
+			if(script_parser_fetch("boot_disp", "hdmi_mode", &hdmi_mode, 1) < 0) {
+				printf("###fetch script data boot_disp.hdmi_mode fail! This must be configed!###\n");
+				return -1;
+			}
+    }
 	if(script_parser_fetch("boot_disp", "cvbs_channel", &cvbs_channel, 1) < 0){
 		cvbs_used = 0;
-	}
-	else
-	{
+	} else {
 		cvbs_used = 1;
-	}
-	if(script_parser_fetch("boot_disp", "hdmi_mode_check", &hdmi_mode_check, 1) < 0){
-		hdmi_mode_check = 1;
+		if(0 == (cvbs_mode = get_display_resolution(DISP_OUTPUT_TYPE_TV)))
+			if(script_parser_fetch("boot_disp", "cvbs_mode", &cvbs_mode, 1) < 0){
+				printf("###fetch script data boot_disp.cvbs_mode fail! This must be configed!###\n");
+				return -1;
+			}
 	}
 
 	printf("boot_disp.auto_hpd=%d\n", value);
-	if(1 == value)
-	{
-		// 1. auto_hpd for homlet
+	if((1 == value) && ((1 == hdmi_used) || (1 == cvbs_used))){
+		// 1. auto_hpd, support hdmi and cvbs
 		arg[0] = hdmi_channel;
 		arg[1] = 0;
 		hdmi_connect = disp_ioctl(NULL, MY_GET_HDMI_HPD_STATUS, (void*)arg);
-		for(i=0; (i<100)&&(hdmi_connect==0) && ((0==cvbs_used)||(i<50)||(cvbs_connect==0)); i++)
-		{
+		for(i=0; (i<100)&&(hdmi_connect==0) && ((0==cvbs_used)||(i<50)||(cvbs_connect==0)); i++){
 			DELAY_MS(10);
 			arg[0] = hdmi_channel;
 			hdmi_connect = disp_ioctl(NULL, MY_GET_HDMI_HPD_STATUS, (void*)arg);
-		    if(cvbs_connect == 0)
-		    {
+		    if(cvbs_connect == 0){
 				arg[0] = cvbs_channel;
 				cvbs_connect = disp_ioctl(NULL, MY_GET_CVBS_HPD_STATUS, (void*)arg);
 		    }
 		}
 		printf("auto hpd check has %d times!\n",i);
-		// 2. get output_type and the screen_id
-		if(hdmi_connect != 0)
-		{
+		// 2. get output_type
+		if(hdmi_connect != 0){
 			output_type = DISP_OUTPUT_TYPE_HDMI;
-		}
-		else if(cvbs_connect != 0)
-		{
+		} else if(cvbs_connect != 0) {
 			output_type = DISP_OUTPUT_TYPE_TV;
-		}
-		else
-		{// i donot want to output none
+		} else {// i donot want to output none
 			if(script_parser_fetch("boot_disp", "output_type", &output_type, 1) < 0){
 				printf("###fetch script data boot_disp.output_type fail! This must be configed!###\n");
 				return -1;
 			}
 		    printf("auto check no any connected, the output_type is %d\n", output_type);
 		}
-    }
-    else if(0 == value) // not auto_hpd for homlet
-    {
+    } else if(0 == value){ // not auto_hpd for homlet
         if(script_parser_fetch("boot_disp", "output_type", &output_type, 1) < 0){
             printf("###output_type must be configed as auto_hpd=0!###\n");
             return -1;
         }
-		printf("not auto hotplud for homlet, the default output_type is %d\n", output_type);
-    }
-    else
-    {
+		printf("not auto hotplud, the default output_type is %d\n", output_type);
+    } else {
         printf("check me: exception!!!\n");
     }
-    switch(output_type)
-    {
+	// 3. get the screen_id and output_mode
+    switch(output_type) {
     case DISP_OUTPUT_TYPE_HDMI:
         screen_id = hdmi_channel;
+		if(hdmi_connect) {
+			//check mode
+			hdmi_mode = reset_hdmi_mode(hdmi_channel, hdmi_mode);
+		} else {
+			output_mode = hdmi_mode;
+			goto go_out; // dont not to open hdmi
+		}
+		output_mode = hdmi_mode;
         break;
     case DISP_OUTPUT_TYPE_TV:
         screen_id = cvbs_channel;
+		output_mode = cvbs_mode;
         break;
     case DISP_OUTPUT_TYPE_LCD:
         if(script_parser_fetch("boot_disp", "lcd_channel", &lcd_channel, 1) < 0){
@@ -934,56 +1141,16 @@ int board_display_device_open(void)
         screen_id = lcd_channel;
         break;
     default:
-        break;
+		printf("check what the output_type=%d\n", output_type);
+		return -1;
     }
-
-	// 3. get output_mode
-	if(0 == (output_mode = get_display_resolution(output_type)))
-	{
-		if(DISP_OUTPUT_TYPE_HDMI == output_type)
-		{
-			if(script_parser_fetch("boot_disp", "hdmi_mode", &output_mode, 1) < 0){
-				printf("###fetch script data boot_disp.hdmi_mode fail! This must be configed!###\n");
-				return -1;
-			}
-		}
-		else if(DISP_OUTPUT_TYPE_TV == output_type)
-		{
-			if(script_parser_fetch("boot_disp", "cvbs_mode", &output_mode, 1) < 0){
-				printf("###fetch script data boot_disp.cvbs_mode fail! This must be configed!###\n");
-				return -1;
-			}
-		}
-		else if(DISP_OUTPUT_TYPE_LCD == output_type)
-		{
-			//do not do anything
-		}
-		else
-		{
-			printf("check what the output_type=%d\n", output_type);
-			return -1;
-		}
-	}
-	else
-	{
-		printf("get the output mode from android(saved by type[%d]) is %d\n",output_type, output_mode);
-	}
-	arg[0] = hdmi_channel;
-	arg[1] = output_mode;
-	if(DISP_OUTPUT_TYPE_HDMI == output_type &&
-		1 == hdmi_mode_check &&
-		!disp_ioctl(NULL, MY_HDMI_SUPPORT_MODE, (void*)arg))
-	{ //MY_HDMI_SUPPORT_MODE: check if support the output_mode by television, return 0 is not support
-		printf("not support this mode[%d], use inline mode[%d]\n", output_mode, HDMI_INLINE_DEFAULT_MODE);
-		output_mode = HDMI_INLINE_DEFAULT_MODE;
-	}
 	// 4. open device
 #if (defined CONFIG_VIDEO_SUNXI_V3)
 	/* CONFIG_VIDEO_SUNXI_V3 */
 		arg[0] = screen_id;
 		arg[1] = output_type;
 		arg[2] = output_mode;
-		disp_ioctl(NULL, DISP_DEVICE_SWITCH, (void *)arg);
+		ret = disp_ioctl(NULL, DISP_DEVICE_SWITCH, (void *)arg);
 #else
 	if(output_type == DISP_OUTPUT_TYPE_LCD)
 	{
@@ -1032,18 +1199,25 @@ int board_display_device_open(void)
 		printf("open device err, output_type=%d\n", output_type);
 	}
 #endif
+
+go_out:
 	// 5. save display para as disp_para
 #if (defined CONFIG_ARCH_SUN9IW1P1)
 	disp_para = ((output_type & 0xff) << 16) | ((output_mode & 0xff) << 8) | ((screen_id & 0xff) << 0);
 	disp_para = (0 == ret) ? disp_para : (disp_para | 0xFF000000);
 #else
-    disp_para = ((output_type << 8) | (output_mode)) << (screen_id*16);
     if(DISP_OUTPUT_TYPE_HDMI == output_type && 0 == hdmi_connect) {
         disp_para = 0;
-    }
+    } else {
+		disp_para = ((output_type << 8) | (output_mode)) << (screen_id*16);
+	}
 #endif
 	tick_printf("finally, output_type=0x%x, output_mode=0x%x, screen_id=0x%x, disp_para=0x%x\n",
 		output_type, output_mode, screen_id, disp_para);
+	if(hdmi_used)
+		init_disp |= (((DISP_OUTPUT_TYPE_HDMI & 0xff) << 8) | (hdmi_mode & 0xff)) << (hdmi_channel << 4);
+	if(cvbs_used)
+		init_disp |= (((DISP_OUTPUT_TYPE_TV & 0xff) << 8) | (cvbs_mode & 0xff)) << (cvbs_channel << 4);
 
 	return ret;
 }
@@ -1341,9 +1515,11 @@ int board_display_setenv(char *data)
 		return -1;
 
 #if ((defined CONFIG_ARCH_HOMELET) && (defined CONFIG_ARCH_SUN9IW1P1))
-	sprintf(data, " disp_rsl=%x", disp_para);
+	sprintf(data, " disp_rsl=%x init_disp=%x tv_vdid=%x",
+		disp_para, init_disp, saved_tv_vdid);
 #else
-	sprintf(data, " disp_para=%x", disp_para);
+	sprintf(data, " disp_para=%x init_disp=%x tv_vdid=%x",
+		disp_para, init_disp, saved_tv_vdid);
 #endif
 	printf("board_display_setenv: %s\n", data);
 	return 0;
@@ -1410,6 +1586,97 @@ int get_display_resolution(int display_type)
 		read_bytes--;
 	}
   return 0;
+}
+
+int get_saved_hdmi_vendor_id(void)
+{
+    char data_buf[512] = {0};
+    char *pvendor_id, *pdata, *pdata_end;
+    int vendor_id = 0;
+    int i = 0;
+    int ret = 0;
+
+    memset(data_buf, 0, 512);
+	ret = aw_fat_fsload("Reserve0", "tv_vdid.fex", data_buf, 512);
+    if(0 >= ret)
+        return 0;
+    pvendor_id = data_buf;
+    pdata = data_buf;
+    pdata_end = pdata + ret;
+    for(;(i < 4) && (pdata != pdata_end); pdata++) {
+        if('\n' == *pdata) {
+            *pdata = '\0';
+            ret = (int)simple_strtoul(pvendor_id, NULL, 16);
+            vendor_id |= ((ret & 0xFF) << (8 * (3 - i)));
+            //printf("pvendor_id=%s, ret=0x%x, vendorID=0x%x\n",
+            //    pvendor_id, ret, vendor_id);
+            pvendor_id = pdata + 1;
+            i++;
+        }
+    }
+    return vendor_id;
+}
+
+int get_hdmi_edid(int sel, unsigned char *edid_buf, int length)
+{
+	unsigned long arg[4] = {0};
+
+	arg[0] = sel;
+	arg[1] = (unsigned long)edid_buf;
+	arg[2] = length;
+	disp_ioctl(NULL, MY_HDMI_GET_EDID, (void*)arg);
+	return 0;
+}
+
+int get_hdmi_vendor_id(int sel)
+{
+#define ID_VENDOR 0x08
+	int vendor_id = 0;
+	unsigned char *pVendor = NULL;
+	unsigned char edid_buf[1024] = {0};
+
+	get_hdmi_edid(sel, edid_buf, 1024);
+	pVendor = edid_buf + ID_VENDOR;
+	vendor_id = (pVendor[0] << 24);
+	vendor_id |= (pVendor[1] << 16);
+	vendor_id |= (pVendor[2] << 8);
+	vendor_id |= pVendor[3];
+	//printf("vendor_id=%d\n", vendor_id);
+	return vendor_id;
+}
+
+int reset_hdmi_mode(int sel, int mode)
+{
+	unsigned long arg[4] = {0};
+	int hdmi_mode_check = 1;
+	int hdmi_vendor_id = 0;
+	int saved_hdmi_vendor_id = saved_tv_vdid;
+    const int HDMI_INLINE_DEFAULT_MODE = DISP_TV_MOD_720P_50HZ;
+
+	if(script_parser_fetch("boot_disp", "hdmi_mode_check", &hdmi_mode_check, 1) < 0){
+		hdmi_mode_check = 1;
+	}
+	if(2 == hdmi_mode_check){
+		// if vendor id change , check mode: hdmi_mode_check = 1;
+		hdmi_vendor_id = get_hdmi_vendor_id(sel);
+		if(hdmi_vendor_id && (hdmi_vendor_id != saved_hdmi_vendor_id)) {
+			hdmi_mode_check = 1;
+			saved_tv_vdid = hdmi_vendor_id;
+			printf("vendor:0x%x, saved_vendor:0x%x\n",
+				hdmi_vendor_id, saved_hdmi_vendor_id);
+		}
+	}
+	if(1 == hdmi_mode_check){  //MY_HDMI_SUPPORT_MODE: check if support the output_mode by television, return 0 is not support
+		arg[0] = sel;
+		arg[1] = mode;
+		if(0 == disp_ioctl(NULL, MY_HDMI_SUPPORT_MODE, (void*)arg)) {
+			printf("not support mode[%d], use inline mode[%d]\n",
+				mode, HDMI_INLINE_DEFAULT_MODE);
+			mode = HDMI_INLINE_DEFAULT_MODE;
+		}
+	}
+
+	return mode;
 }
 
 #else

@@ -505,6 +505,15 @@ s32 tcon0_cfg(u32 sel, disp_panel_para * panel)
 	return 0;
 }
 
+s32 tcon0_cfg_ext(u32 sel, panel_extend_para *extend_panel)
+{
+	tcon_gamma(sel,extend_panel->lcd_gamma_en,extend_panel->lcd_gamma_tbl);
+	tcon_cmap(sel,extend_panel->lcd_cmap_en,extend_panel->lcd_cmap_tbl);
+
+	return 0;
+}
+
+
 s32 tcon0_tri_busy(u32 sel)
 {
 	return lcd_dev[sel]->tcon0_cpu_ctl.bits.trigger_start;

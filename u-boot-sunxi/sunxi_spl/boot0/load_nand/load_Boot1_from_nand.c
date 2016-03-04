@@ -33,6 +33,7 @@
 #include "spare_head.h"
 #include "private_uboot.h"
 #include "asm/arch/nand_boot0.h"
+#include "../libs/sbrom_libs.h"
 
 /*******************************************************************************
 *º¯ÊýÃû³Æ: load_Boot1_from_nand

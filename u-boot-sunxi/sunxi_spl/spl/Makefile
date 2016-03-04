@@ -28,6 +28,7 @@ LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/libsource_spl.o
 LIBS-$(CONFIG_STORAGE_MEDIA_MMC) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/mmc/libmmc.o
 LIBS-$(CONFIG_STORAGE_MEDIA_NAND) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/nand/libnand.o
 LIBS-y += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libdram.o
+LIBS-$(CONFIG_SUNXI_CHIPID) += arch/$(ARCH)/cpu/$(CPU)/$(SOC)/dram/libchipid.o
 LIBS-y += lib/libgeneral.o
 
 LIBS := $(addprefix $(OBJTREE)/,$(sort $(LIBS-y)))

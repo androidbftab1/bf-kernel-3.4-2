@@ -595,13 +595,21 @@ void i2c_init(uint bus_id, int speed, int slaveaddr)
 	}
 	else if(ret == 2) //cpus i2c
 	{
-		strcpy(twi_para, "s_rsb0");
 #if defined(CONFIG_CPUS_I2C)
+#ifdef CONFIG_ARCH_SUN8IW7P1
+		strcpy(twi_para, "s_rsb0");
+#else
+		strcpy(twi_para, "s_twi0");
+#endif
 		set_cpus_i2c_clock(bus_id);
+#else
+		printf("not define CONFIG_CPUS_I2C\n");
+		return;
 #endif
 	}
 	else
 	{
+		printf("i2c bus id error %d\n", ret);
 		return ;
 	}
 
@@ -675,25 +683,48 @@ void i2c_init(uint bus_id, int speed, int slaveaddr)
 */
 void i2c_exit(uint bus_id)
 {
-	bus_id = bus_id;
-#if defined(CONFIG_ARCH_SUN9IW1P1)
+	int ret;
+	uint twi_host = 0;
 	uint reg_value = 0;
-	reg_value = *((unsigned int *)CCM_APB1_GATE0_CTRL);
-	reg_value &= ~(0x01 << bus_id);
-	*((unsigned int *)CCM_APB1_GATE0_CTRL) = reg_value ;
+	reg_value = reg_value;
+	ret = busid_to_addr(bus_id, &twi_host);
+	if(ret == 1) //cpux i2c
+	{
+#if defined(CONFIG_ARCH_SUN9IW1P1)
+		reg_value = *((unsigned int *)CCM_APB1_GATE0_CTRL);
+		reg_value &= ~(0x01 << bus_id);
+		*((unsigned int *)CCM_APB1_GATE0_CTRL) = reg_value ;
 #else
 #if defined(CONFIG_ARCH_SUN8IW6P1)
-	uint reg_value = 0;
-	reg_value = *((unsigned int *)CCMU_BUS_CLK_GATING_REG3);
-	reg_value &= ~(0x01 << bus_id);
-	*((unsigned int *)CCMU_BUS_CLK_GATING_REG3) = reg_value ;
+		reg_value = *((unsigned int *)CCMU_BUS_CLK_GATING_REG3);
+		reg_value &= ~(0x01 << bus_id);
+		*((unsigned int *)CCMU_BUS_CLK_GATING_REG3) = reg_value ;
 #else
-	struct sunxi_ccm_reg *ccm_reg = (struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
-	/* close i2c clock    */
-	ccm_reg->apb1_gate &= ~1;
+		struct sunxi_ccm_reg *ccm_reg = (struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+		/* close i2c clock    */
+		ccm_reg->apb1_gate &= ~1;
 #endif
-
 #endif
+	}
+	else if(ret == 2) //cpus i2c stwi0
+	{
+#if defined(CONFIG_CPUS_I2C)
+	    reg_value = *((unsigned int *)(R_PRCE_APB0_RESET));
+	    reg_value &= ~(0x01 << 6);
+	    *((unsigned int *)(R_PRCE_APB0_RESET)) = reg_value;
+	    __msdelay(1);
+	    reg_value = *((unsigned int *)(R_PRCM_APB0_GATING));
+	    reg_value &= ~(0x01 << 6);
+	    *((unsigned int *)(R_PRCM_APB0_GATING)) = reg_value;
+#else
+		printf("not define CONFIG_CPUS_I2C\n");
+#endif
+	}
+	else
+	{
+		printf("i2c bus id error %d\n", ret);
+		return ;
+	}
 	__msdelay(1);
 	return ;
 }

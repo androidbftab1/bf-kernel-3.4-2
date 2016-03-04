@@ -64,7 +64,7 @@ extern  void spic_config_dual_mode(u32 spi_no, u32 rxdual, u32 dbc, u32 stc);
 *
 ************************************************************************************************************
 */
-int spinor_init(void)
+int spinor_init(int stage)
 {
 	if(spic_init(0))
 	{
@@ -89,7 +89,7 @@ int spinor_init(void)
 *
 ************************************************************************************************************
 */
-int spinor_exit(void)
+int spinor_exit(int stage)
 {
 	return 0;
 }
@@ -147,6 +147,7 @@ int spinor_read(uint start, uint sector_cnt, void *buffer)
 #endif
         if (spic_rw(txnum, (void *)sdata, rxnum, tmp_buf))
         {
+        	printf("@@@spinor_read error...\n");
             ret = -1;
             break;
         }

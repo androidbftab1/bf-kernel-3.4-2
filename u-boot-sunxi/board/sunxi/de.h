@@ -38,6 +38,8 @@ extern int board_display_show(int display_source);
 
 extern int board_display_framebuffer_set(int width, int height, int bitcount, void *buffer);
 
+extern int card_board_display_framebuffer_set(int width, int height, int bitcount, void *buffer,int count);
+
 extern int board_display_framebuffer_change(void *buffer);
 
 extern int board_display_device_open(void);

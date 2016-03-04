@@ -156,6 +156,14 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 	setup_memory_tags (bd);
 #endif
 #ifdef CONFIG_CMDLINE_TAG
+/*
+#ifdef CONFIG_READ_LOGO_FOR_KERNEL
+	if(gd->fb_base != 0)
+	{
+            sprintf(commandline ,"%s%s%x",commandline," fb_base=0x",(uint)gd->fb_base);
+        }
+#endif
+*/
 	setup_commandline_tag (bd, commandline);
 #endif
 #ifdef CONFIG_INITRD_TAG
@@ -172,6 +180,9 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
 
 	return 1;
 }
+
+
+extern int plat_get_chip_id(void);
 
 /* Boot android style linux kernel and ramdisk */
 int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
@@ -206,6 +217,7 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 	setup_memory_tags (bd);
 #endif
 #ifdef CONFIG_CMDLINE_TAG
+
 	if(strlen((const char *)hdr->cmdline)) {
 		char *s = getenv("partitions");
 		char *sig = getenv("signature");
@@ -221,6 +233,10 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 		{
 			strcat((char *)hdr->cmdline, data);
 		}
+
+        strcat((char *)hdr->cmdline, " fb_base=");
+        sprintf(data , "0x%x", (uint)gd->fb_base);
+        strcat((char *)hdr->cmdline, data);
 
 		if(sig != NULL)
 		{
@@ -239,7 +255,11 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 
 		strcat((char *)hdr->cmdline, " partitions=");
         strcat((char *)hdr->cmdline, s);
-
+#if defined(CONFIG_SUN8IW6P1)
+		strcat((char *)hdr->cmdline, " axp_chipid=");
+		sprintf(data, "%d", plat_get_chip_id());
+		strcat((char *)hdr->cmdline, data);
+#endif
 		setup_commandline_tag (bd, (char *)hdr->cmdline);
 	} else {
 
@@ -262,6 +282,10 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 			strcat(cmdline, data);
 		}
 
+        strcat((char *)cmdline, " fb_base=");
+        sprintf(data , "0x%x", (uint)gd->fb_base);
+        strcat((char *)cmdline, data);
+
 		if(gd->chargemode == 1)
 		{
 		    strcat(cmdline," androidboot.mode=");
@@ -276,9 +300,11 @@ int do_boota_linux (struct fastboot_boot_img_hdr *hdr)
 		{	strcat(cmdline, " signature=");
 			strcat(cmdline, sig);
         }
-
-	//	strcat(cmdline, " partitions=");
-        //strcat(cmdline, s);
+#if defined(CONFIG_SUN8IW6P1)
+		strcat((char *)cmdline, " axp_chipid=");
+		sprintf(data, "%d", plat_get_chip_id());
+		strcat(cmdline, data);
+#endif
 		setup_commandline_tag (bd, cmdline);
 	}
 #endif

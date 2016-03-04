@@ -208,8 +208,8 @@ static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 	writel(0,mmchost->mclkbase);
 	mmcdbg("mmc %d mclkbase 0x%x\n",mmchost->mmc_no,readl(mmchost->mclkbase));
 	if (clk <=400000) {
-	sdly = 0;
-	odly = 0;
+	sdly = mmc->mmc_clk_dly[MMC_CLK_400K].sclk_dly;
+	odly = mmc->mmc_clk_dly[MMC_CLK_400K].oclk_dly;
 	mmchost->mclk = 400000;
     writel(0x0002000f|(sdly << 20)|(odly << 8), mmchost->mclkbase);
 		mmcdbg("mmc %d mclkbase 0x%x\n",mmchost->mmc_no,readl(mmchost->mclkbase));
@@ -232,13 +232,13 @@ static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 		}
 		mmchost->mclk = clk;
 		if (clk <= 26000000){
-			sdly = 0;
-			odly = 0;
+			sdly = mmc->mmc_clk_dly[MMC_CLK_25M].sclk_dly;
+			odly = mmc->mmc_clk_dly[MMC_CLK_25M].oclk_dly;
 			writel(0x01000000 |(sdly << 20)|(odly << 8)| (n << 16) | m, mmchost->mclkbase);
 		}
 		else{
-			sdly = 4;
-			odly = 3;
+			sdly = mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly;
+			odly = mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly;
 			writel(0x01000000 | (sdly << 20) | (odly << 8) | (n << 16) | m, mmchost->mclkbase);
 		}
 		mmcdbg("init mmc %d pllclk %d, clk %d, mclkbase %x\n",mmchost->mmc_no,
@@ -675,6 +675,32 @@ int sunxi_mmc_init(int sdc_no, unsigned bus_width, const normal_gpio_cfg *gpio_i
 		}
 	}else{
 		mmc->f_max = 25000000;
+	}
+	
+	mmc->mmc_clk_dly[MMC_CLK_400K].mode 	= MMC_CLK_400K;
+	mmc->mmc_clk_dly[MMC_CLK_400K].oclk_dly = 0;
+	mmc->mmc_clk_dly[MMC_CLK_400K].sclk_dly = 0;
+	if(sdcard_info->sdc_ex_dly_used[sdc_no])
+	{
+		mmc->mmc_clk_dly[MMC_CLK_25M].mode 		= MMC_CLK_25M;
+		mmc->mmc_clk_dly[MMC_CLK_25M].oclk_dly 	= sdcard_info->sdc_odly_25M[sdc_no];
+		mmc->mmc_clk_dly[MMC_CLK_25M].sclk_dly 	= sdcard_info->sdc_sdly_25M[sdc_no];
+		mmcdbg("mmc 25MHz used Config.fex oclk %d,sclk %d\n",mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly,mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly);
+		mmc->mmc_clk_dly[MMC_CLK_50M].mode 		= MMC_CLK_50M;
+		mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly 	= sdcard_info->sdc_odly_50M[sdc_no];
+		mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly 	= sdcard_info->sdc_sdly_50M[sdc_no];
+		mmcdbg("mmc 50MHz used Config.fex oclk %d,sclk %d\n",mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly,mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly);
+	}
+	else
+	{
+		mmc->mmc_clk_dly[MMC_CLK_25M].mode 		= MMC_CLK_25M;
+		mmc->mmc_clk_dly[MMC_CLK_25M].oclk_dly 	= 0;
+		mmc->mmc_clk_dly[MMC_CLK_25M].sclk_dly 	= 5;
+		mmcdbg("mmc 25MHz used Default oclk %d,sclk %d\n",mmc->mmc_clk_dly[MMC_CLK_25M].oclk_dly,mmc->mmc_clk_dly[MMC_CLK_25M].sclk_dly);
+		mmc->mmc_clk_dly[MMC_CLK_50M].mode 		= MMC_CLK_50M;
+		mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly 	= 5;
+		mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly 	= 4;
+		mmcdbg("mmc 50MHz used Default oclk %d,sclk %d\n",mmc->mmc_clk_dly[MMC_CLK_50M].oclk_dly,mmc->mmc_clk_dly[MMC_CLK_50M].sclk_dly);
 	}
 	mmc->control_num = sdc_no;
 

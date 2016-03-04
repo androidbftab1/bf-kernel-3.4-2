@@ -22,6 +22,7 @@
 #include <private_boot0.h>
 #include <private_uboot.h>
 #include <asm/arch/dram.h>
+#include <asm/arch/clock.h>
 
 extern const boot0_file_head_t  BT0_head;
 /*

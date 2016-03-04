@@ -627,6 +627,10 @@ int  NAND_EraseChip(void)
 			if((j&0xff) == 0)
 				printf("erase chip %u, block %u\n",chip, para_read.block);
 
+			ret = PHY_Nand_Sorting_IsBadblock(i,j);
+			if(ret==1)
+				continue;
+
 			para_read.chip = chip;
 			para_read.mainbuf = page_buf_read;
 			para_read.oobbuf = oob_buf_read;
@@ -1171,7 +1175,7 @@ __s32  burn_boot0_1k_mode( __u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份 */
@@ -1255,7 +1259,7 @@ __s32  burn_boot0_lsb_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */
@@ -1374,7 +1378,7 @@ __s32  burn_boot0_lsb_FF_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前2个page */
@@ -1513,7 +1517,7 @@ __s32  burn_boot0_1k_mode_F16( __u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 			printf("Fail in erasing block %d.\n", i );
-			continue;
+			//continue;
 		}
 
 		/* 在块中烧写boot0备份 */
@@ -1657,7 +1661,7 @@ __s32 burn_uboot_in_one_blk(__u32 UBOOT_buf, __u32 length)
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */

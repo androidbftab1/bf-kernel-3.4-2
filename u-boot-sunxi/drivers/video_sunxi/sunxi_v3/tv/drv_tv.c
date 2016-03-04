@@ -66,6 +66,7 @@ s32 tv_init(void)
 	char sub_key[20];
 	u32 sid = 0;
 	g_suspend = 0;
+	int sid_turn = 0;
 
 	memset(&g_tv_info, 0, sizeof(tv_info_t));
 	type = disp_sys_script_get_item("tv_para", "tv_used", &val, 1);
@@ -81,11 +82,25 @@ s32 tv_init(void)
 		}
 
 		sid = tve_low_get_sid(0x10);
+
 		if (0 == sid) {
 			g_tv_info.screen[0].sid = 0x200;
 			g_tv_info.screen[1].sid = g_tv_info.screen[0].sid;
 		}
 		else {
+			if(sid & (1<<9))
+				sid_turn = 0 + (sid & 0x1ff);
+			else
+				sid_turn = 0 - (sid & 0x1ff);
+
+			sid_turn += 91;
+
+			if(sid_turn >= 0)
+				sid_turn = (1<<9) | sid_turn;
+			else
+				sid_turn = 0 - sid_turn;
+			sid = (u32)sid_turn;
+
 			g_tv_info.screen[0].sid = sid;
 			g_tv_info.screen[1].sid = g_tv_info.screen[0].sid;
 		}

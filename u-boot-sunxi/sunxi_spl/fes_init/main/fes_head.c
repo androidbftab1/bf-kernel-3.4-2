@@ -32,9 +32,10 @@
 #include "common.h"
 #include <private_boot0.h>
 
+extern char fes_hash[64] ;
 const boot0_file_head_t  fes1_head = {
 	                                  {
-	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot0_file_head_t ) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
+	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot0_file_head_t ) + sizeof(fes_hash) + sizeof(fes_extend_config) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
 							   		      BOOT0_MAGIC,
 							   		      STAMP_VALUE,
 							   		      32,
@@ -44,7 +45,7 @@ const boot0_file_head_t  fes1_head = {
 										  },
 							   		      CONFIG_FES1_RET_ADDR,
 							   		      CONFIG_FES1_RUN_ADDR,
-							   		      EGON_VERSION,
+							   		      0,
 							   		      {
 							   		      	0, 0, '3','.','0','.','0',0
 							   		      },

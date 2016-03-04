@@ -28,6 +28,11 @@
 #include <asm/arch/ccmu.h>
 
 extern const boot0_file_head_t fes1_head;
+extern fes_extend_config fes_config;
+
+#ifdef CONFIG_BOOT0_POWER
+extern int pmu_set_vol(int set_vol, int onoff);
+#endif
 
 typedef struct __fes_aide_info{
     __u32 dram_init_flag;       /* Dram初始化完成标志       */
@@ -61,6 +66,12 @@ static void  note_dram_log(int dram_init_flag)
 
     memcpy(fes_aide->dram_paras, fes1_head.prvt_head.dram_para, SUNXI_DRAM_PARA_MAX * 4);
     memcpy((void *)DRAM_PARA_STORE_ADDR, fes1_head.prvt_head.dram_para, SUNXI_DRAM_PARA_MAX * 4);
+}
+
+extern char fes_hash_value[64];
+static void print_commit_log(void)
+{
+        printf("fes commit : %s \n",fes_hash_value);
 }
 /*
 ************************************************************************************************************
@@ -100,6 +111,16 @@ int main(void)
 	sunxi_serial_init(fes1_head.prvt_head.uart_port, (void *)fes1_head.prvt_head.uart_ctrl, 2);
 	//enable gpio gate
 	set_gpio_gate();
+	//print commit message
+	print_commit_log();
+
+#ifdef CONFIG_BOOT0_POWER
+	if(fes_config.if_reduce_power_waste == 1)
+	{
+		pmu_set_vol(1100, 1);
+	}
+#endif
+
 	//dram init
 	printf("beign to init dram\n");
 	dram_size = init_DRAM(0, (void *)fes1_head.prvt_head.dram_para);

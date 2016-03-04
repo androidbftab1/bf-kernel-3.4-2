@@ -24,7 +24,7 @@ s32 bsp_disp_init(disp_bsp_init_para * para)
 #if defined(SUPPORT_HDMI)
 	disp_init_hdmi(para);
 #endif
-#if defined(SUPPORT_TV)
+#if defined(SUPPORT_TV) && defined(CONFIG_ARCH_SUN8IW7)
 	disp_init_tv(para);
 #endif
 	disp_init_mgr(para);
@@ -214,7 +214,9 @@ s32 disp_init_connections(void)
 	for(disp=0; disp<num_screens; disp++) {
 		struct disp_manager *mgr;
 		struct disp_layer *lyr;
-		//struct disp_device *dispdev = NULL;
+#ifdef CONFIG_ARCH_SUN8IW8P1
+		struct disp_device *dispdev = NULL;
+#endif
 		struct disp_enhance *enhance = NULL;
 		struct disp_smbl *smbl = NULL;
 		struct disp_capture *cptr = NULL;
@@ -231,7 +233,7 @@ s32 disp_init_connections(void)
 				lyr->set_manager(lyr, mgr);
 			}
 		}
-#if 0
+#ifdef CONFIG_ARCH_SUN8IW8P1
 		/* connect device & it's manager */
 		if(bsp_disp_feat_is_supported_output_types(disp, DISP_OUTPUT_TYPE_LCD)) {
 			dispdev = disp_device_get(disp, DISP_OUTPUT_TYPE_LCD);
@@ -616,6 +618,24 @@ s32 bsp_disp_hdmi_get_hpd_status(u32 disp)
 		hdmi = disp_device_find(disp, DISP_OUTPUT_TYPE_HDMI);
 		if(hdmi && hdmi->detect) {
 			ret = hdmi->detect(hdmi);
+			break;
+		}
+	}
+
+	return ret;
+}
+
+s32 bsp_disp_hdmi_get_edid(u32 disp)
+{
+	u32 num_screens = 0;
+	s32 ret = 0 ;
+
+	num_screens = bsp_disp_feat_get_num_screens();
+	for(disp=0; disp<num_screens; disp++) {
+		struct disp_device *hdmi;
+		hdmi = disp_device_find(disp, DISP_OUTPUT_TYPE_HDMI);
+		if(hdmi && hdmi->get_edid) {
+			ret = hdmi->get_edid(hdmi);
 			break;
 		}
 	}

@@ -284,9 +284,9 @@ void bsp_hdmi_inner_init(void)
 	hdmi_write(0x00C1, 0x03);
 	hdmi_write(0x00C0, 0x00);
 	hdmi_write(0x40C1, 0x10);
-//	hdmi_write(0x0081, 0xff);
-//	hdmi_write(0x0081, 0x00);
-//	hdmi_write(0x0081, 0xff);
+	hdmi_write(0x0081, 0xfd);
+	hdmi_write(0x0081, 0x00);
+	hdmi_write(0x0081, 0xfd);
 	hdmi_write(0x0010, 0xff);
 	hdmi_write(0x0011, 0xff);
 	hdmi_write(0x8010, 0xff);
@@ -541,7 +541,7 @@ int bsp_hdmi_ddc_read(char cmd,char pointer,char offset,int nbyte,char * pbuf)
 	unsigned char off = offset;
 	unsigned int to_cnt;
 	int ret = 0;
-	
+
 	hdmi_write(0x10010,0x45);
 	hdmi_write(0x10011,0x45);
 	hdmi_write(0x10012,0x52);

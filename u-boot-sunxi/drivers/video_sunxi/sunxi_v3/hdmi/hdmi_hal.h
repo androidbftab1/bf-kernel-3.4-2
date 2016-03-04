@@ -55,6 +55,7 @@ extern __s32 Hdmi_hal_get_video_info(__s32 vic);
 extern __s32 Hdmi_hal_get_list_num(void);
 extern __s32 Hdmi_hal_enter_lp(void);
 extern __s32 Hdmi_hal_is_playback(void);
+extern __s32 Hdmi_hal_get_edid(void);
 
 struct disp_hdmi_mode
 {

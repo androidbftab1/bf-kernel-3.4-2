@@ -26,7 +26,6 @@ include $(TOPDIR)/config.mk
 LIB	=  $(obj)lib$(SOC).o
 
 HEAD    := spare_head.o
-
 SOBJS	:= lowlevel_init.o
 
 COBJS	+= gic.o
@@ -49,8 +48,7 @@ COBJS	+= usb/usbc.o 			\
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS) $(COBJS-y) $(SOBJS))
 HEAD	:= $(addprefix $(obj),$(HEAD))
-
-all:	 $(obj).depend $(HEAD) $(LIB)
+all:	 $(obj).depend $(HEAD) $(LIB) 
 
 $(LIB):	$(OBJS)
 	$(call cmd_link_o_target, $(OBJS))

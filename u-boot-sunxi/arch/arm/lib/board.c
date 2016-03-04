@@ -211,6 +211,13 @@ static int display_dram_config(void)
 	return (0);
 }
 
+extern char uboot_hash_value[64];
+static int print_commit_log(void)
+{
+        tick_printf("uboot commit : %s \n",uboot_hash_value);
+        return 0;
+}
+
 static int init_func_pmubus(void)
 {
 	tick_printf("pmbus:   ");
@@ -337,6 +344,7 @@ init_fnc_t *init_sequence[] = {
 	console_init_f,		/* stage 1 init of console */
 	display_banner,		/* say that we are here */
 	display_inner,      /* show the inner version */
+        print_commit_log,
 	script_init,
 #if defined(SUNXI_OTA_TEST)
 	display_ota_test,
@@ -527,15 +535,15 @@ void board_init_f(ulong bootflag)
 	dram_init_banksize();
 	display_dram_config();	/* and display it */
 
-	gd->relocaddr = addr + sizeof(struct spare_boot_head_t);
+	gd->relocaddr = addr + sizeof(struct spare_boot_head_t) + sizeof(uboot_hash_value);
 	gd->start_addr_sp = addr_sp;
 	gd->reloc_off = addr - _TEXT_BASE;
 	printf("relocation Offset is: %08lx\n", gd->reloc_off);
-	memcpy((void *)addr, (void *)_TEXT_BASE, sizeof(struct spare_boot_head_t));
+	memcpy((void *)addr, (void *)_TEXT_BASE, sizeof(uboot_hash_value)+sizeof(struct spare_boot_head_t));
 	debug("from %x to %x, size %x\n", (void *)_TEXT_BASE, (void *)addr, sizeof(struct spare_boot_head_t));
 	memcpy(id, (void *)gd, sizeof(gd_t));
 
-	relocate_code(addr_sp, id, addr + sizeof(struct spare_boot_head_t));
+	relocate_code(addr_sp, id, addr + sizeof(struct spare_boot_head_t)+sizeof(uboot_hash_value));
 
 	/* NOTREACHED - relocate_code() does not return */
 }
@@ -618,7 +626,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	axp_reinit();
 	//uboot_spare_head.boot_data.work_mode = WORK_MODE_CARD_PRODUCT;
 
-#if defined(CONFIG_CPUS_STANDBY) //目前只在sun9iw1p1 homelet上使用
+#if defined(CONFIG_CPUS_STANDBY) //目前只在homelet上使用
 	do_box_standby();
 #endif
 
@@ -677,8 +685,13 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	}
 #endif
 
+#ifndef CONFIG_ARCH_SUN8IW8P1
 	if((workmode == WORK_MODE_BOOT) || (workmode == WORK_MODE_CARD_PRODUCT) || (workmode == WORK_MODE_SPRITE_RECOVERY))
 	{
+#else
+	if((workmode == WORK_MODE_CARD_PRODUCT) || (workmode == WORK_MODE_SPRITE_RECOVERY))
+	{
+#endif
 #if (defined(CONFIG_SUNXI_DISPLAY) || defined(CONFIG_SUN7I_DISPLAY))
 	    drv_disp_init();
 #endif
@@ -720,7 +733,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 			}
 			else
 			{
-				ret0 = sunxi_secure_storage_read("hdcpkey", buffer, 4096, &data_len);
+				ret0 = sunxi_secure_object_read("hdcpkey", buffer, 4096, &data_len);
 				if(ret0)
 				{
 					printf("probe hdcp key failed\n");
@@ -943,6 +956,10 @@ void board_init_r(gd_t *id, ulong dest_addr)
 			}
 		}
 #endif
+#ifdef CONFIG_READ_LOGO_FOR_KERNEL
+	    sunxi_read_bootlogo("boot_logo");
+#endif
+
 	}
 	/* main_loop() can return to retry autoboot, if so just run it again. */
 	for (;;)

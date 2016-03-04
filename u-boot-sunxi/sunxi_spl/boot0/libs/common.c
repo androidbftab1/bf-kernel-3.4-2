@@ -39,11 +39,13 @@ extern int debug_mode;
 *
 *    return        :
 *
-*    note          :if BT0_head.prvt_head.debug_mode_off = 1,do not print any message to uart 
+*    note          :if BT0_head.prvt_head.debug_mode_off = 1,do not print any message to uart
 *
 *
 ************************************************************************************************************
 */
+
+#include <asm/arch/uart.h>
 
 void set_debugmode_flag(void)
 {
@@ -70,5 +72,5 @@ void set_debugmode_flag(void)
 	else
 		debug_mode = 0;
 	return ;
-		
+
 }

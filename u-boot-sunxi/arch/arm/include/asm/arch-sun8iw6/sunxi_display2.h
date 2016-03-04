@@ -338,6 +338,7 @@ typedef struct
 	int (*hdmi_resume)(void);
 	int (*hdmi_early_suspend)(void);
 	int (*hdmi_late_resume)(void);
+	int (*hdmi_get_edid)(void);
 }disp_hdmi_func;
 
 typedef struct
@@ -359,12 +360,16 @@ typedef struct {
 	unsigned int sub_intf;
 	unsigned int sequence;
 	unsigned int fdelay;
+	unsigned int clk_phase;
+	unsigned int sync_polarity;
 }disp_vdevice_interface_para;
 
 typedef struct
 {
 	int (*tcon_enable)(struct disp_device *dispdev);
 	int (*tcon_disable)(struct disp_device *dispdev);
+	int (*tcon_simple_enable)(struct disp_device *dispdev);
+	int (*tcon_simple_disable)(struct disp_device *dispdev);
 }disp_vdevice_source_ops;
 
 typedef struct
@@ -444,8 +449,9 @@ typedef enum tag_DISP_CMD
 
 	//----hdmi----
 	DISP_HDMI_SUPPORT_MODE = 0xc4,
-	DISP_HDMI_GET_HPD_STATUS = 0xc5,
-	DISP_TV_GET_HPD_STATUS = 0xc6,
+	DISP_HDMI_GET_HPD_STATUS = 0xc7,
+	DISP_TV_GET_HPD_STATUS = 0xc8,
+	DISP_HDMI_GET_EDID = 0xc9,
 
 	//----lcd----
 	DISP_LCD_ENABLE = 0x100,

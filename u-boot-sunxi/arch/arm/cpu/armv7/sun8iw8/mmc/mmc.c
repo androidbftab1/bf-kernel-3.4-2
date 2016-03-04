@@ -7,6 +7,7 @@
  * Date: 2012-2-3 14:18:18
  */
 #include "mmc_def.h"
+#include "mmc_bsp.h"
 #include "mmc.h"
 
 /* Set block count limit because of 16 bit register limit on some hardware*/
@@ -733,8 +734,8 @@ retry_scr:
 		return err;
 	}
 
-	mmc->scr[0] = __be32_to_cpu(scr[0]);
-	mmc->scr[1] = __be32_to_cpu(scr[1]);
+	mmc->scr[0] = __mmc_be32_to_cpu(scr[0]);
+	mmc->scr[1] = __mmc_be32_to_cpu(scr[1]);
 
 	switch ((mmc->scr[0] >> 24) & 0xf) {
 		case 0:

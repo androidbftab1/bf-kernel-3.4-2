@@ -28,7 +28,6 @@
 # c. Switch uart port
 #    - Need to add your chip configs into pctools/linux/card_debug_pin
 #    - Call pack with 'debug' parameters
-set -x
 
 
 if [ $(basename `pwd`) != "sunxi-pack" ] ; then

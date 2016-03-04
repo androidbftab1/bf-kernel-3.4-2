@@ -264,6 +264,11 @@ __s32 Hdmi_get_input_csc(void)
 	return Hmdi_hal_get_input_csc();
 }
 
+__s32 Hdmi_get_edid(void)
+{
+	return Hdmi_hal_get_edid();
+}
+
 int Hdmi_run_thread(void *parg)
 {
 	while (1) {
@@ -305,10 +310,11 @@ __s32 Hdmi_init(void)
 			}
 			disp_sys_clk_enable("hdmi");
 
-			Hdmi_set_reg_base(HDMI_BASE);
-			Hdmi_hal_init();
 			hdmi_parse_io_config();
 			hdmi_io_config(1);
+
+			Hdmi_set_reg_base(HDMI_BASE);
+			Hdmi_hal_init();
 
 			disp_func.hdmi_open = Hdmi_open;
 			disp_func.hdmi_close = Hdmi_close;
@@ -317,6 +323,7 @@ __s32 Hdmi_init(void)
 			disp_func.hdmi_get_HPD_status = Hdmi_get_HPD_status;
 			disp_func.hdmi_get_input_csc = Hdmi_get_input_csc;
 			disp_func.hdmi_get_video_timing_info = Hdmi_get_video_timming_info;
+			disp_func.hdmi_get_edid = Hdmi_get_edid;
 			disp_set_hdmi_func(&disp_func);
 		}
 	}

@@ -77,6 +77,6 @@
 #define DRAM_START_ADDR				(0x40000000)
 
 
-#define DRIVER_VER  "2014-12-10 21:20:39"
+#define DRIVER_VER  "2015-01-04 17:00:39"
 
 #endif /* _MMC_H_ */

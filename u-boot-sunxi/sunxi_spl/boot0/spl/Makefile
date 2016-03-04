@@ -25,13 +25,16 @@ include $(TOPDIR)/config.mk
 
 LIB	=  $(obj)libsource_spl.o
 
-COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/rtc_region.o
-COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/timer_spl.o
-COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/gpio_spl.o
-COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/serial_spl.o
-COBJS	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/clock_spl.o
+COBJS-y	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/rtc_region.o
+COBJS-y	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/timer_spl.o
+COBJS-y	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/gpio_spl.o
+COBJS-y	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/serial_spl.o
+COBJS-y	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/clock_spl.o
+COBJS-$(CONFIG_SUNXI_CHIPID)	+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/efuse_spl.o
+COBJS-$(CONFIG_BOOT0_POWER)		+= $(TOPDIR)/arch/$(ARCH)/cpu/$(CPU)/$(SOC)/spl/power.o
 
 #COBJS-$(CONFIG_XXXX)	+= xxxx.o
+COBJS	:= $(COBJS-y)
 
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -179,8 +179,6 @@ endif
 
 COBJS-$(CONFIG_FASTBOOT) += cmd_fastboot.o
 
-
-
 COBJS-y += console.o
 COBJS-y += stdio.o
 

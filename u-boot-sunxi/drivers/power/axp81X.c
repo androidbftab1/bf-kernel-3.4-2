@@ -30,6 +30,38 @@ extern int axp81_set_supply_status(int vol_name, int vol_value, int onoff);
 extern int axp81_set_supply_status_byname(char *vol_name, int vol_value, int onoff);
 extern int axp81_probe_supply_status(int vol_name, int vol_value, int onoff);
 extern int axp81_probe_supply_status_byname(char *vol_name);
+
+#define AXP_ID_ADDR				(0x3e) //0the real address is x13e
+
+int plat_get_chip_id(void)
+{
+	u8 chip_id = 0;
+	u8 data;
+	//change to high address
+	data = 0x1;
+	if(sunxi_rsb_write(AXP81X_ADDR, 0xff, &data,1))
+	{
+		printf("chipid:write 1 to addr 0xff  failed\n");
+		return -1;
+	}
+
+	if(sunxi_rsb_read(AXP81X_ADDR, AXP_ID_ADDR, &chip_id,1))
+	{
+		printf("chipid:read axp id failed\n");
+		return -1;
+	}
+	//change to low address
+	data = 0;
+	if(sunxi_rsb_write(AXP81X_ADDR, 0xFF, &data,1))
+	{
+		printf("chipid:write 0 to addr 0xff failed\n");
+		return -1;
+	}
+	printf("axp chip id:%x ", chip_id);
+
+	return chip_id;
+}
+
 /*
 ************************************************************************************************************
 *

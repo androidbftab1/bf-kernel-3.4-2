@@ -28,6 +28,7 @@
 #include <asm/arch/intc.h>
 #include <asm/arch/timer.h>
 #include <smc.h>
+#include <securestorage.h>
 
 struct timer_list timer0_t;
 struct timer_list timer1_t;
@@ -183,7 +184,7 @@ int do_sprite_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		sprite_led_init();
 		ret = sprite_form_sysrecovery();
 		sprite_led_exit(ret);
-		return ret;	
+		return ret;
 	}
 	else
 	{
@@ -508,6 +509,50 @@ U_BOOT_CMD(
 	huk_test, 3, 0, do_huk_test,
 	"create a huk as a test",
 	"usage: huk_test"
+);
+
+int do_hdcp_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int  ret, data_len;
+	char buffer[4096];
+
+	printf("try to test hdcp\n");
+	memset(buffer, 0, 4096);
+	ret = sunxi_secure_storage_init();
+	if(ret)
+	{
+		printf("sunxi init secure storage failed\n");
+	}
+	else
+	{
+		ret = sunxi_secure_storage_read("hdcpkey", buffer, 4096, &data_len);
+		if(ret)
+		{
+			printf("probe hdcp key failed\n");
+		}
+		else
+		{
+			printf("source data in secure storage\n");
+			sunxi_dump(buffer, (data_len+3)&(~0x3));
+			ret = smc_aes_bssk_decrypt_to_keysram(buffer, data_len);
+			if(ret)
+			{
+				printf("push hdcp key failed\n");
+			}
+			else
+			{
+				printf("push hdcp key ok\n");
+			}
+		}
+	}
+
+	return 0;
+}
+
+U_BOOT_CMD(
+	hdcp_test, 3, 0, do_hdcp_test,
+	"test the hdcp key",
+	"usage: hdcp_test"
 );
 
 #endif

@@ -51,6 +51,8 @@
 static void *imghd = NULL;
 static void *imgitemhd = NULL;
 
+DECLARE_GLOBAL_DATA_PTR;
+
 //extern int sunxi_flash_mmc_phywipe(unsigned long start_block, unsigned long nblock, unsigned long *skip);
 static int __download_normal_part(dl_one_part_info *part_info,  uchar *source_buff);
 /*
@@ -681,7 +683,11 @@ int sunxi_sprite_deal_part(sunxi_download_info *dl_map)
 		return -1;
 	}
  	//申请内存
+#ifdef CONFIG_ARCH_SUN8IW8P1
+    down_buff = (uchar *)malloc_noncache(SPRITE_CARD_ONCE_DATA_DEAL + SPRITE_CARD_HEAD_BUFF);
+#else
     down_buff = (uchar *)malloc(SPRITE_CARD_ONCE_DATA_DEAL + SPRITE_CARD_HEAD_BUFF);
+#endif
     if(!down_buff)
     {
     	printf("sunxi sprite err: unable to malloc memory for sunxi_sprite_deal_part\n");
@@ -780,10 +786,17 @@ __sunxi_sprite_deal_part_err2:
 */
 int sunxi_sprite_deal_uboot(int production_media)
 {
-	char buffer[1024 * 1024];
+	char buffer[4 * 1024 * 1024];
 	uint item_original_size;
+	if(!gd->securemode)
+	{
+		imgitemhd = Img_OpenItem(imghd, "12345678", "UBOOT_0000000000");
+	}
+	else
+	{
+		imgitemhd = Img_OpenItem(imghd, "12345678", "TOC1_00000000000");
+	}
 
-    imgitemhd = Img_OpenItem(imghd, "12345678", "UBOOT_0000000000");
     if(!imgitemhd)
     {
         printf("sprite update error: fail to open uboot item\n");
@@ -797,7 +810,7 @@ int sunxi_sprite_deal_uboot(int production_media)
         return -1;
     }
     /*获取uboot的数据*/
-    if(!Img_ReadItem(imghd, imgitemhd, (void *)buffer, 1024 * 1024))
+    if(!Img_ReadItem(imghd, imgitemhd, (void *)buffer, 4 * 1024 * 1024))
     {
         printf("update error: fail to read data from for uboot\n");
         return -1;
@@ -832,17 +845,25 @@ int sunxi_sprite_deal_uboot(int production_media)
 */
 int sunxi_sprite_deal_boot0(int production_media)
 {
-	char buffer[32 * 1024];
+	char buffer[1 *1024 * 1024];
 	uint item_original_size;
 
-	if(production_media == 0)
+	if(!gd->securemode)
 	{
-		imgitemhd = Img_OpenItem(imghd, "BOOT    ", "BOOT0_0000000000");
+		if(production_media == 0)
+		{
+			imgitemhd = Img_OpenItem(imghd, "BOOT    ", "BOOT0_0000000000");
+		}
+		else
+		{
+			imgitemhd = Img_OpenItem(imghd, "12345678", "1234567890BOOT_0");
+		}
 	}
 	else
 	{
-		imgitemhd = Img_OpenItem(imghd, "12345678", "1234567890BOOT_0");
+		imgitemhd = Img_OpenItem(imghd, "12345678", "TOC0_00000000000");
 	}
+
     if(!imgitemhd)
     {
         printf("sprite update error: fail to open boot0 item\n");
@@ -855,8 +876,9 @@ int sunxi_sprite_deal_boot0(int production_media)
         printf("sprite update error: fail to get boot0 item size\n");
         return -1;
     }
+
     /*获取boot0的数据*/
-    if(!Img_ReadItem(imghd, imgitemhd, (void *)buffer, 32 * 1024))
+    if(!Img_ReadItem(imghd, imgitemhd, (void *)buffer, 1 * 1024 * 1024))
     {
         printf("update error: fail to read data from for boot0\n");
         return -1;
@@ -1533,6 +1555,7 @@ int __imagehd(HIMAGE tmp_himage)
 */
 #ifdef CONFIG_SUNXI_SPINOR
 extern int sunxi_sprite_setdata_finish(void);
+extern int sunxi_sprite_setdata_card_finish(void);
 static int __download_fullimg_part(uchar *source_buff)
 {
     uint tmp_partstart_by_sector;
@@ -1646,7 +1669,7 @@ __download_fullimg_part_err1:
 int sunxi_sprite_deal_fullimg(void)
 {
     int  ret  = -1;
-    int  ret1;
+    int  ret1,full;
     uchar  *down_buff         = NULL;
 
     if(sunxi_sprite_init(1))
@@ -1654,6 +1677,7 @@ int sunxi_sprite_deal_fullimg(void)
         printf("sunxi sprite err: init flash err\n");
         return -1;
     }
+
     down_buff = (uchar *)malloc(SPRITE_CARD_ONCE_DATA_DEAL + SPRITE_CARD_HEAD_BUFF);
     if(!down_buff)
     {
@@ -1669,9 +1693,18 @@ int sunxi_sprite_deal_fullimg(void)
 
         goto __sunxi_sprite_deal_fullimg_err2;
     }
-	//while(*(volatile uint *)0 != 0x12);
-    sunxi_sprite_setdata_finish();
-
+	ret = script_parser_fetch("disp_init", "disp_init_enable", &full, 1);
+	if(full == 0)
+	{
+		printf("IPC card product\n");
+		sunxi_sprite_setdata_finish();
+	}
+	else
+	{
+		printf("CDR card product\n");
+		sunxi_sprite_setdata_card_finish();
+	}
+	
     printf("sunxi card sprite trans finish\n");
 
     ret = 0;

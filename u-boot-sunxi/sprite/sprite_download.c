@@ -302,16 +302,21 @@ int sunxi_sprite_download_boot0(void *buffer, int production_media)
 			//storage_data[384];  // 0-159,存储nand信息；160-255,存放卡信息
 			mmc_write_info(2,(void *)(toc0_config->storage_data+160),384-160);
 		}
-		{
-			int i;
-			uint *addr = (uint *)DRAM_PARA_STORE_ADDR;
 
-			for(i=0;i<32;i++)
-			{
-				printf("dram para[%d] = 0x%x\n", i, addr[i]);
-			}
+		if((uboot_spare_head.boot_data.work_mode == WORK_MODE_CARD_PRODUCT) || ((uboot_spare_head.boot_data.work_mode == WORK_MODE_SPRITE_RECOVERY)))
+		{
+			memcpy((void *)toc0_config->dram_para, (void *)(uboot_spare_head.boot_data.dram_para), 32 * 4);
+			toc0_config->dram_para[4] += toc0_config->secure_dram_mbytes;
 		}
-		memcpy((void *)toc0_config->dram_para, (void *)DRAM_PARA_STORE_ADDR, 32 * 4);
+		else
+		{
+			memcpy((void *)toc0_config->dram_para, (void *)DRAM_PARA_STORE_ADDR, 32 * 4);
+		}
+		int i;
+		for(i=0;i<32;i++)
+		{
+			printf("dram para[%d] = 0x%x\n", i, toc0_config->dram_para[i]);
+		}
 		/* regenerate check sum */
 		toc0->check_sum = sunxi_sprite_generate_checksum(buffer, toc0->length, toc0->check_sum);
 		//校验数据是否正确

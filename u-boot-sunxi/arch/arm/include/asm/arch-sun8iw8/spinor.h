@@ -33,9 +33,9 @@ extern int spinor_erase_all_blocks(int erase);
 extern int spinor_size(void);
 extern int spinor_sprite_write(uint start, uint nblock, void *buffer);
 extern int spinor_datafinish(void);
+extern int spinor_datafinish_card(void);
 extern s32 spi_nor_rw_test(u32 spi_no);
 extern u32 try_spi_nor(u32 spino);
-
 
 
 #endif

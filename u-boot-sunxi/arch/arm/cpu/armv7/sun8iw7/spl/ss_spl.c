@@ -22,6 +22,7 @@
 #include "asm/io.h"
 #include "asm/arch/ccmu.h"
 #include "asm/arch/ss.h"
+#include "asm/arch/mmu.h"
 /*
 ************************************************************************************************************
 *
@@ -293,8 +294,9 @@ int  sunxi_sha_calc(u8 *dst_addr, u32 dst_len,
 	task0.ctr_descriptor = 0;
 	task0.data_len = total_len;
 
-	task0.source[0].addr = (uint)src_addr;
+	task0.source[0].addr = va2pa((uint)src_addr);
 	task0.source[0].length = total_len;
+
 	for(i=1;i<8;i++)
 		task0.source[i].length = 0;
 

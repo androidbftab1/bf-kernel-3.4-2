@@ -238,8 +238,11 @@ LIBS += disk/libdisk.o
 LIBS += drivers/smc/libsmc.o
 endif
 LIBS += net/libnet.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
+LIBS += drivers/efuse/libsunxi_efuse.o
 LIBS += drivers/bios_emulator/libatibiosemu.o
 LIBS += drivers/block/libblock.o
+endif
 LIBS += drivers/dma/libdma.o
 LIBS += drivers/rsb/librsb.o
 LIBS += drivers/fpga/libfpga.o
@@ -251,19 +254,28 @@ LIBS += drivers/input/libinput.o
 LIBS += drivers/misc/libmisc.o
 LIBS += drivers/mmc/libmmc.o
 LIBS += drivers/storage_type/libstorage_type.o
+
+LIBS += drivers/srclib/libjpeddec.o
+
 #LIBS += drivers/mtd/libmtd.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += drivers/mtd/nand/libnand.o
 LIBS += drivers/mtd/onenand/libonenand.o
 LIBS += drivers/mtd/ubi/libubi.o
+endif
 LIBS += drivers/mtd/spi/libspi_flash.o
 LIBS += drivers/net/libnet.o
 LIBS += drivers/net/phy/libphy.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += drivers/pci/libpci.o
 LIBS += drivers/pcmcia/libpcmcia.o
+endif
 LIBS += drivers/power/libpower.o
 LIBS += drivers/spi/libspi.o
 LIBS += drivers/spinor/libspinor.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += drivers/audio/libaudio.o
+endif
 ifeq ($(CPU),mpc83xx)
 LIBS += drivers/qe/libqe.o
 LIBS += arch/powerpc/cpu/mpc8xxx/lib8xxx.o
@@ -279,12 +291,14 @@ LIBS += arch/powerpc/cpu/mpc8xxx/lib8xxx.o
 endif
 LIBS += drivers/rtc/librtc.o
 LIBS += drivers/serial/libserial.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += drivers/twserial/libtws.o
 LIBS += drivers/usb/eth/libusb_eth.o
 LIBS += drivers/usb/gadget/libusb_gadget.o
 LIBS += drivers/usb/host/libusb_host.o
 LIBS += drivers/usb/musb/libusb_musb.o
 LIBS += drivers/usb/phy/libusb_phy.o
+endif
 #LIBS += drivers/video/libvideo.o
 ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 ifeq ($(SOC),sun7i)
@@ -300,13 +314,18 @@ endif
 LIBS += drivers/pwm/libsunxi_pwm.o
 LIBS += drivers/watchdog/libwatchdog.o
 LIBS += common/libcommon.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += lib/libfdt/libfdt.o
+endif
 LIBS += api/libapi.o
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += post/libpost.o
 LIBS += sprite/libsprite.o
-
+endif
+ifndef CONFIG_SUNXI_SPINOR_PLATFORM
 LIBS += usb_sunxi/libsunxi_usb.o
 LIBS += memtest/libsunxi_memtest.o
+endif
 
 ifeq ($(SOC),omap3)
 LIBS += $(CPUDIR)/omap-common/libomap-common.o
@@ -457,6 +476,8 @@ $(obj)u-boot.ubl:       $(obj)u-boot-nand.bin
 		-e $(CONFIG_SYS_TEXT_BASE) -d $< $@
 
 $(obj)u-boot-$(TARGET).bin:	$(obj)u-boot.bin
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f u-boot.bin -m uboot
 		@cp $(obj)u-boot.bin         $(obj)u-boot-$(CONFIG_TARGET_NAME).bin
 		@if [ -z "$(findstring _nor, $(CONFIG_TARGET_NAME))" ]; then \
 			if [ -z "$(findstring $(OTA_TEST_NAME), $(SUNXI_MODE))" ]; then \
@@ -496,12 +517,16 @@ spl_lib: $(TIMESTAMP_FILE) $(VERSION_FILE) depend
 
 fes:    spl_lib depend
 		$(MAKE) -C sunxi_spl/fes_init all
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f sunxi_spl/fes_init/fes1.bin -m boot0
 		@$(TOPDIR)/tools/gen_check_sum sunxi_spl/fes_init/fes1.bin fes1_$(CONFIG_TARGET_NAME).bin > /dev/null
 		@cp -v fes1_$(CONFIG_TARGET_NAME).bin $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/fes1_$(CONFIG_TARGET_NAME).bin
 
 boot0:  spl_lib depend
 		$(MAKE) -C sunxi_spl/boot0 all
 ifdef CONFIG_STORAGE_MEDIA_NAND
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f sunxi_spl/boot0/boot0_nand.bin -m boot0
 		@$(TOPDIR)/tools/gen_check_sum sunxi_spl/boot0/boot0_nand.bin boot0_nand_$(TARGET).bin > /dev/null
 		@if [ -z "$(findstring $(OTA_TEST_NAME), $(SUNXI_MODE))" ]; then \
 			cp -v boot0_nand_$(CONFIG_TARGET_NAME).bin $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/boot0_nand_$(CONFIG_TARGET_NAME).bin; \
@@ -510,6 +535,8 @@ ifdef CONFIG_STORAGE_MEDIA_NAND
 		fi
 endif
 ifdef CONFIG_STORAGE_MEDIA_MMC
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f sunxi_spl/boot0/boot0_sdcard.bin -m boot0
 		@$(TOPDIR)/tools/gen_check_sum sunxi_spl/boot0/boot0_sdcard.bin boot0_sdcard_$(TARGET).bin > /dev/null
 		@if [ -z "$(findstring $(OTA_TEST_NAME), $(SUNXI_MODE))" ]; then \
 			cp -v boot0_sdcard_$(CONFIG_TARGET_NAME).bin $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/boot0_sdcard_$(CONFIG_TARGET_NAME).bin; \
@@ -518,6 +545,8 @@ ifdef CONFIG_STORAGE_MEDIA_MMC
 		fi
 endif
 ifdef CONFIG_STORAGE_MEDIA_SPINOR
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f sunxi_spl/boot0/boot0_spinor.bin -m boot0
 		@$(TOPDIR)/tools/gen_check_sum sunxi_spl/boot0/boot0_spinor.bin boot0_spinor_$(TARGET).bin > /dev/null
 		@if [ -z "$(findstring $(OTA_TEST_NAME), $(SUNXI_MODE))" ]; then \
 			cp -v boot0_spinor_$(CONFIG_TARGET_NAME).bin $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/boot0_spinor_$(CONFIG_TARGET_NAME).bin; \
@@ -527,6 +556,8 @@ ifdef CONFIG_STORAGE_MEDIA_SPINOR
 endif
 sboot:  spl_lib depend
 		$(MAKE) -C sunxi_spl/sbrom all
+		@git show HEAD --pretty=format:"%H" | head -n 1 > cur.log
+		@../add_hash.sh -f sunxi_spl/sbrom/sboot.bin -m sboot
 		@$(TOPDIR)/tools/gen_check_sum sunxi_spl/sbrom/sboot.bin sboot_$(CONFIG_TARGET_NAME).bin > /dev/null
 		@if [ -z "$(findstring $(OTA_TEST_NAME), $(SUNXI_MODE))" ]; then \
 			cp -v sboot_$(CONFIG_TARGET_NAME).bin $(TOPDIR)/../../tools/pack/chips/$(CONFIG_TARGET_NAME)/bin/sboot_$(CONFIG_TARGET_NAME).bin; \

@@ -213,6 +213,11 @@ __s32 Hdmi_hal_exit(void)
     return 0;
 }
 
+__s32 Hdmi_hal_get_edid(void)
+{
+	return GetEdidInfo();
+}
+
 
 __s32 Hdmi_hal_video_enable_sync(bool enable)
 {

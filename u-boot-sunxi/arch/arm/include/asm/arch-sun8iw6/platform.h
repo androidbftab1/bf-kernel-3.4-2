@@ -134,6 +134,8 @@
 #define R_INTC_BASE			(0x01f00C00)
 #define R_WDOG_BASE			(0x01f01000)
 #define R_PRCM_BASE			(0x01f01400)
+#define R_PRCM_APB0_GATING  (R_PRCM_BASE + 0x28)
+#define R_PRCE_APB0_RESET 	(R_PRCM_BASE + 0xb0)
 #define R_CPUCFG_BASE		(0x01f01C00)
 #define R_CIR_BASE			(0x01f02000)
 #define R_TWI_BASE			(0x01f02400)

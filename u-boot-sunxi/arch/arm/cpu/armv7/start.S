@@ -416,7 +416,7 @@ jump_2_ram:
 	mov	r1, r6		/* dest_addr */
 	/* jump to it ... */
 	mov	pc, lr
-	
+
 #if defined(CONFIG_CPUS_STANDBY)
 .globl	boot_standby_new_relocate
 boot_standby_new_relocate:
@@ -427,17 +427,17 @@ boot_standby_new_relocate:
 
 	add r2, r2, r4
 	add r3, r3, r4
-	
-	// relocate code
+
+	/* relocate code */
 	sub r2, r2, r1
 	sub r3, r3, r1
-	
+
 copy_standby_new_loop:
 	ldmia   r2!, {r6-r7}
 	stmia   r0!, {r6-r7}
 	cmp     r2, r3
 	blo     copy_standby_new_loop
-	
+
 	mov pc, lr
 #endif
 

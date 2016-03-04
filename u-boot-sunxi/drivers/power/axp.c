@@ -47,6 +47,14 @@ extern int axp808_probe(void);
 extern int power_rich_probe(void);
 extern int power_oz_probe(void);
 
+int __plat_get_chip_id(void)
+{
+       return -1;
+}
+
+int plat_get_chip_id(void)
+       __attribute__((weak, alias("__plat_get_chip_id")));
+
 int axp_probe_power_id(char *name)
 {
 	if(!strcmp("axp22x", name))
@@ -1181,9 +1189,22 @@ int axp_set_power_supply_output(void)
 #endif
 #elif defined(CONFIG_SUNXI_AXP15)
     power_supply_hd = script_parser_fetch_subkey_start("axp15_para");
+#elif (defined(CONFIG_ARCH_SUN8IW6) && defined(CONFIG_ARCH_HOMELET))
+	int  chipid;
+	//0x18:axp_818, 0x13:axp_813 0x03:axp_803 0x0: key not burn
+	chipid = plat_get_chip_id();
+	if(chipid == 0x03)
+	{
+		power_supply_hd = script_parser_fetch_subkey_start("power_sply_ext");
+	}
+	else
+	{
+		power_supply_hd = script_parser_fetch_subkey_start("power_sply");
+	}
 #else
     power_supply_hd = script_parser_fetch_subkey_start("power_sply");
 #endif
+
     if(!power_supply_hd)
     {
         printf("unable to set power supply\n");
@@ -1414,7 +1435,7 @@ int axp_probe_power_supply_condition(void)
 *
 *    返回值  ：
 *
-*    说明    ：
+*    说??    ：
 *
 *
 ************************************************************************************************************
@@ -1631,9 +1652,38 @@ int axp_set_supply_status_byregulator(const char* id, int onoff)
     int find_flag = 0;
     int ret = 0;
 
+#if (defined(CONFIG_ARCH_SUN8IW6) && defined(CONFIG_ARCH_HOMELET))
+    static int chipid = -2; //use static variable for read once
 
-    for(i = 1; i <= 2; i++)
+    if(chipid == -2)
     {
+        //just read once
+    	chipid = plat_get_chip_id();
+    }
+
+    //0x18:axp_818, 0x13:axp_813 0x03:axp_803 0x0: key not burn
+    if(chipid == -1)  //default, platform not implement function plat_get_chip_id
+    {
+    	printf("axp chipid not care,use default regulator tree\n");
+    	i = 1;
+    }
+    else if(chipid == 0x03)
+    {
+    	printf("use extend  regulator tree\n");
+    	i = 2;
+    }
+    else
+    {
+    	printf("use default regulator tree\n");
+    	i = 1;
+    }
+
+   for(i = 1; i <= 1; i++)
+   {
+#else
+   for(i = 1; i <= 2; i++)
+   {
+#endif
         sprintf(main_key,"pmu%d_regu", i);
 
         main_hd = script_parser_fetch(main_key,"regulator_count",&ldo_count, 1);

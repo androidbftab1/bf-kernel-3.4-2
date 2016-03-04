@@ -15,7 +15,7 @@
 #include <private_toc.h>
 
 
-#ifdef SUNXI_MMCDBG
+#ifdef MMC_DEBUG
 //#define MMCDBG(fmt...)	printf("[mmc]: "fmt)
 
 static void dumphex32(char* name, char* base, int len)
@@ -26,7 +26,7 @@ static void dumphex32(char* name, char* base, int len)
 	for (i=0; i<len; i+=4)
 	{
 		if (!(i&0xf))
-			mmcmsg("\n%p : ", base + i);
+			mmcmsg("\n%x : ", base + i);
 		mmcmsg("%x ", readl(base + i));
 	}
 	mmcmsg("\n");
@@ -69,6 +69,18 @@ extern int mmc_unregister(int dev_num);
 /* support 4 mmc hosts */
 struct mmc mmc_dev[MAX_MMC_NUM];
 struct sunxi_mmc_host mmc_host[MAX_MMC_NUM];
+
+int sunxi_clock_get_pll6(void)
+{
+     unsigned int reg_val;
+     int factor_n, div1,div2, pll6;
+     reg_val = readl(CCMU_PLL_PERIPH_CTRL_REG);
+     factor_n = ((reg_val >> 8) & 0xff);
+     div1 = ((reg_val >> 16) & 0x1) + 1;
+     div2 = ((reg_val >> 18) & 0x1) + 1;
+     pll6 = 24 * factor_n/div1/div2;
+     return pll6;
+}
 
 void set_mmc_para(int smc_no,void *sdly_addr )
 {
@@ -116,7 +128,7 @@ static int mmc_clk_io_onoff(int sdc_no, int onoff, const normal_gpio_cfg *gpio_i
 	}
 	else // if(sdc_no == 2)
 	{
-		boot_set_gpio((void *)(gpio_info + offset), 8, 1);
+		boot_set_gpio((void *)(gpio_info + offset), 10, 1);
 	}
 	/* config ahb clock */
 	rval = readl(mmchost->hclkbase);
@@ -129,8 +141,8 @@ static int mmc_clk_io_onoff(int sdc_no, int onoff, const normal_gpio_cfg *gpio_i
 	/* config mod clock */
 	writel(0x80000000, mmchost->mclkbase);
 	mmchost->mclk = 24000000;
-	dumphex32("ccmu", (char*)CCMM_REGS_BASE, 0x100);
-	dumphex32("gpio", (char*)PIOC_REGS_BASE, 0x100);
+	dumphex32("ccmu", (char*)SUNXI_CCM_BASE, 0x100);
+	dumphex32("gpio", (char*)SUNXI_PIO_BASE, 0x100);
 	dumphex32("mmc", (char*)mmchost->reg, 0x100);
 
 	return 0;
@@ -152,6 +164,20 @@ static int mmc_update_clk(struct mmc *mmc)
     }
 
 	writel(readl(&mmchost->reg->rint), &mmchost->reg->rint);
+	return 0;
+}
+
+
+static int mmc_update_phase(struct mmc *mmc)
+{
+	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
+	
+	if( (mmchost->mmc_no== 2) && (mmchost->host_func & MMC_HOST_2XMODE_FUNC) )
+	{
+		mmcinfo("mmc re-update_phase\n");
+		return mmc_update_clk(mmc);
+	}
+	
 	return 0;
 }
 
@@ -207,6 +233,122 @@ static int mmc_config_clock(struct mmc *mmc, unsigned clk)
 	return 0;
 }
 
+
+
+static int mmc_2xmode_config_clock(struct mmc *mmc, unsigned clk)
+{
+	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
+	unsigned rval = readl(&mmchost->reg->clkcr);
+	unsigned int clkdiv = 0;
+	unsigned int rntsr = readl(&mmchost->reg->ntsr);
+	//unsigned int rgctrl = readl(&mmchost->reg->gctrl);
+
+	/* Disable Clock */
+	rval &= ~(1 << 16);
+	writel(rval, &mmchost->reg->clkcr);
+	if(mmc_update_clk(mmc))
+		return -1;
+
+	//disable mclk first
+	writel(0x4000000,mmchost->mclkbase);
+	mmcdbg("mmc %d mclkbase 0x%x\n",mmchost->mmc_no, readl(mmchost->mclkbase));
+
+	/*NTSR*/
+	rntsr |= (1<<31);
+	mmcdbg("mmc %d rntsr 0x%x\n",mmchost->mmc_no,rntsr);
+	writel(rntsr, &mmchost->reg->ntsr);
+
+
+	/*set ddr mode*/
+	//if(mmc->io_mode){
+	//	mmcdbg("first %d rgctrl 0x%x\n",mmchost->mmc_no,rgctrl);
+	//	rgctrl |= 1 << 10;
+	//	writel(rgctrl, &mmchost->reg->gctrl);
+	//	mmcdbg("after %d rgctrl 0x%x\n",mmchost->mmc_no,readl(&mmchost->reg->gctrl));
+	//}
+	//else{
+	//	mmcdbg("mmc not set ddr mmc->io_mode = %x\n",mmc->io_mode);
+	//}
+
+	if (clk <=400000) {
+		mmchost->mclk = 400000;
+		writel(0x4001000e, mmchost->mclkbase);
+		mmcdbg("mmc %d mclkbase 0x%x\n",mmchost->mmc_no, readl(mmchost->mclkbase));
+	} else {
+		u32 pllclk;
+		u32 n,m;
+
+		pllclk = sunxi_clock_get_pll6() * 1000000;
+		/*set ddr mode clock*/
+		if(mmc->io_mode){
+			clkdiv = pllclk /( clk *4 ) - 1;
+		}else{
+			clkdiv = pllclk /( clk *2 ) - 1;
+		}
+
+		if (clkdiv < 16) {
+			n = 0;
+			m = clkdiv;
+		} else if (clkdiv < 32) {
+			n = 1;
+			m = clkdiv>>1;
+		} else {
+			n = 2;
+			m = clkdiv>>2;
+		}
+		mmchost->mclk = clk;
+
+		if (clk <= 26000000){
+			writel(0x41000000| (n << 16) | m, mmchost->mclkbase);
+		}else{
+			writel(0x41000000 | (n << 16) | m, mmchost->mclkbase);
+		}
+		mmcdbg("init mmc %d pllclk %d, clk %d, mclkbase %x\n",mmchost->mmc_no,
+				pllclk, mmchost->mclk, readl(mmchost->mclkbase));
+		mmcdbg("Get round clk %d\n",pllclk/(1<<n)/(m+1)/2);
+		if (mmc->io_mode)
+			mmc->clock = pllclk/(1<<n)/(m+1)/2/2;
+		else
+		   mmc->clock = pllclk/(1<<n)/(m+1)/2;
+	}
+	//re-enable mclk
+	writel(readl(mmchost->mclkbase)|(1<<31),mmchost->mclkbase);
+	mmcdbg("mmc %d mclkbase 0x%x\n",mmchost->mmc_no, readl(mmchost->mclkbase));
+	/*
+	 * CLKCREG[7:0]: divider
+	 * CLKCREG[16]:  on/off
+	 * CLKCREG[17]:  power save
+	 */
+	/* Change Divider Factor */
+	rval &= ~(0xFF);
+	if (mmc->io_mode)
+		rval |= 0x1;
+	writel(rval, &mmchost->reg->clkcr);
+	if(mmc_update_clk(mmc)){
+		mmcdbg("mmc %d disable clock failed\n",mmchost->mmc_no);
+		return -1;
+	}
+	/* Re-enable Clock */
+	rval |= (3 << 16);
+	writel(rval, &mmchost->reg->clkcr);
+	if(mmc_update_clk(mmc)){
+		mmcinfo("mmc %d re-enable clock failed\n",mmchost->mmc_no);
+		return -1;
+	}
+
+	dumphex32("ccmu", (char*)SUNXI_CCM_BASE, 0x100);
+	dumphex32("gpio", (char*)SUNXI_PIO_BASE, 0x100);
+	dumphex32("mmc", (char*)mmchost->reg, 0x100);
+
+	mmcdbg("mmc %d ntsr 0x%x\n",mmchost->mmc_no,readl(&mmchost->reg->ntsr));
+	return 0;
+
+}
+
+
+
+
+
 static void mmc_set_ios(struct mmc *mmc)
 {
 	struct sunxi_mmc_host* mmchost = (struct sunxi_mmc_host *)mmc->priv;
@@ -214,10 +356,20 @@ static void mmc_set_ios(struct mmc *mmc)
 
 	mmcdbg("mmc %d ios: bus: %d, clock: %d\n",mmchost ->mmc_no, mmc->bus_width, mmc->clock);
 
-	if (mmc->clock && mmc_config_clock(mmc, mmc->clock)) {
-	    mmcinfo("[mmc]: " "*** update clock failed\n");
-		mmchost->fatal_err = 1;
-		return;
+	if(mmchost->host_func & MMC_HOST_2XMODE_FUNC){
+		if (mmc->clock && mmc_2xmode_config_clock(mmc, mmc->clock)) {
+	    	printf("[mmc]: " "*** update clock failed\n");
+			mmchost->fatal_err = 1;
+			return;
+		}
+
+	}else{
+		//to compatible with previous boot0, use 12m when in old mode
+		if (mmc->clock && mmc_config_clock(mmc, mmc->clock)) {
+	    	mmcinfo("[mmc]: " "*** update clock failed\n");
+			mmchost->fatal_err = 1;
+			return;
+		}
 	}
 	/* Change bus width */
 	if (mmc->bus_width == 8)
@@ -226,6 +378,14 @@ static void mmc_set_ios(struct mmc *mmc)
 		writel(1, &mmchost->reg->width);
 	else
 		writel(0, &mmchost->reg->width);
+
+	if(mmc->io_mode){
+		uint tmp = readl(&mmchost->reg->gctrl);
+		tmp |= (1<<10);
+		writel(tmp,&mmchost->reg->gctrl);
+		mmcdbg("enable ddr %x\n",readl(&mmchost->reg->gctrl));
+	}
+	
 }
 
 static int mmc_core_init(struct mmc *mmc)
@@ -466,7 +626,7 @@ static int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 			error = status & 0xbbc2;
 			if(!error)
 				error = 0xffffffff;//represet software timeout
-			mmcinfo("mmc %d cmd %d timeout, err %x\n",mmchost ->mmc_no, cmd->cmdidx, error);
+			mmcinfo("mmc %d cmd %d err %x\n",mmchost ->mmc_no, cmd->cmdidx, error);
 			goto out;
 		}
 	} while (!(status&0x4));
@@ -481,7 +641,7 @@ static int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 				error = status & 0xbbc2;
 				if(!error)
 					error = 0xffffffff;//represet software timeout
-				mmcinfo("mmc %d data timeout, err %x\n",mmchost ->mmc_no, error);
+				mmcinfo("mmc %d data err %x\n",mmchost ->mmc_no, error);
 				goto out;
 			}
 			if (data->blocks > 1)
@@ -571,6 +731,7 @@ int sunxi_mmc_init(int sdc_no, unsigned bus_width, const normal_gpio_cfg *gpio_i
 {
 	struct mmc *mmc;
 	int ret;
+	boot_sdcard_info_t  *sdcard_info = (boot_sdcard_info_t *)extra_data;
 
 	mmcinfo("mmc driver ver %s\n",DRIVER_VER);
 
@@ -583,15 +744,36 @@ int sunxi_mmc_init(int sdc_no, unsigned bus_width, const normal_gpio_cfg *gpio_i
 	mmc->send_cmd = mmc_send_cmd;
 	mmc->set_ios = mmc_set_ios;
 	mmc->init = mmc_core_init;
+	mmc->update_phase = mmc_update_phase;
 
 	mmc->voltages = MMC_VDD_29_30|MMC_VDD_30_31|MMC_VDD_31_32|MMC_VDD_32_33|
 	                MMC_VDD_33_34|MMC_VDD_34_35|MMC_VDD_35_36;
 	mmc->host_caps = MMC_MODE_HS_52MHz|MMC_MODE_HS|MMC_MODE_HC;
+
+	if((sdcard_info->ddrmode[sdc_no])&& (sdc_no == 2)&&(sdcard_info->sdc_2xmode[sdc_no])){
+		mmc->host_caps |= MMC_MODE_DDR_52MHz; 
+	}
+	
 	if (bus_width==4)
 		mmc->host_caps |= MMC_MODE_4BIT;
 
+
+	if((sdc_no == 2)&&(sdcard_info->sdc_2xmode[sdc_no])){
+		if(bus_width== 8)
+			mmc->host_caps |= MMC_MODE_8BIT;
+	}
+
 	mmc->f_min = 400000;
-	mmc->f_max = 25000000;
+	if((sdcard_info->sdc_2xmode[sdc_no]) && (sdc_no == 2)){
+		mmc_host[sdc_no].host_func |= MMC_HOST_2XMODE_FUNC;
+		if((sdcard_info->sdc_f_max[sdc_no])&&(sdcard_info->sdc_f_max[sdc_no]<=50000000)){
+			mmc->f_max = sdcard_info->sdc_f_max[sdc_no];
+		}else{
+			mmc->f_max = 50000000;
+		}
+	}else{
+		mmc->f_max = 25000000;
+	}
 	mmc->control_num = sdc_no;
 
 

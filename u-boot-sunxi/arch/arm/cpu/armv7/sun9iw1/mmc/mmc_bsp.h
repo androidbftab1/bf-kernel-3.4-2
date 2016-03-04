@@ -4,18 +4,21 @@
 /* winner's mmc controller definition */
 typedef struct _boot_sdcard_info_t
 {
-	__s32               card_ctrl_num;                //?á¨112|ì???§|ì???¨oy
-	__s32				boot_offset;                  //????§??§????￥??o¨??ê????-o¨a??¨¤¨a?¤???|ì?1¨1¨¤¨a
-	__s32 				card_no[4];                   //|ì?à???????￥|ì???§o?, 16-31:GPIO?à¨¤o??ê?0-15:¨o|ì?¨o??§????????à¨¤o?
-	__s32 				speed_mode[4];                //??§|ì??¨′?¨¨??ê¨o??ê?0?êo|ì¨a?¨′?ê????¨1?êo???¨′
-	__s32				line_sel[4];                  //??§|ì??????ê?0: 1???ê????¨1?ê?4??
-	__s32				line_count[4];                //??§¨o1¨????|ì???¨oy
-	__s32  	        	sdc_2xmode[4];
-	__s32				ddrmode[4];
-	__s32               sdc_f_max[4]; 
-
-}
-boot_sdcard_info_t;
+	__s32               card_ctrl_num;                //总共的卡的个数
+	__s32				boot_offset;                  //指定卡启动之后，逻辑和物理分区的管理
+	__s32 				card_no[4];                   //当前启动的卡号, 16-31:GPIO编号，0-15:实际卡控制器编号
+	__s32 				speed_mode[4];                //卡的速度模式，0：低速，其它：高速
+	__s32				line_sel[4];                  //卡的线制，0: 1线，其它，4线
+	__s32				line_count[4];                //卡使用线的个数
+	__s32 				sdc_2xmode[4];
+	__s32 				sdc_ddrmode[4];
+	__s32 				sdc_f_max[4];
+	__s32				sdc_ex_dly_used[4];			//used config.fex delay
+	__s32				sdc_odly_25M[4];			//25MHz clk output delay
+	__s32				sdc_sdly_25M[4];			//25MHz clk sample delay
+	__s32				sdc_odly_50M[4];			//50MHz clk output delay
+	__s32				sdc_sdly_50M[4];			//50MHz clk sample delay
+}boot_sdcard_info_t;
 
 /* winner's mmc controller definition */
 struct sunxi_mmc {

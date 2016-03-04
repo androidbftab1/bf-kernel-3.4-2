@@ -137,11 +137,19 @@ int sprite_cartoon_test(void)
 	printf("screen_width = %d\n", screen_width);
     printf("screen_height = %d\n", screen_height);
 
+#ifndef CONFIG_ARCH_SUN8IW8P1
 	x1 = screen_width/4;
 	x2 = x1 * 3;
 
 	y1 = screen_height/2 - 40;
 	y2 = screen_height/2 + 40;
+#else
+	x1 = screen_width/8;
+	x2 = x1 * 6;
+
+	y1 = screen_height/2 - 20;
+	y2 = screen_height/2 + 20;
+#endif
 
 	printf("bar x1: %d y1: %d\n", x1, y1);
 	printf("bar x2: %d y2: %d\n", x2, y2);
@@ -217,11 +225,19 @@ uint sprite_cartoon_create(void)
 	printf("screen_width = %d\n", screen_width);
     printf("screen_height = %d\n", screen_height);
 
+#ifndef CONFIG_ARCH_SUN8IW8P1
 	x1 = screen_width/4;
 	x2 = x1 * 3;
 
 	y1 = screen_height/2 - 40;
 	y2 = screen_height/2 + 40;
+#else
+	x1 = screen_width/(screen_width/10);
+	x2 = x1 * (screen_width/10-1);
+
+	y1 = screen_height/2 - 20;
+	y2 = screen_height/2 + 20;
+#endif
 
 	printf("bar x1: %d y1: %d\n", x1, y1);
 	printf("bar x2: %d y2: %d\n", x2, y2);
@@ -229,8 +245,12 @@ uint sprite_cartoon_create(void)
 	progressbar_hd = sprite_cartoon_progressbar_create(x1, y1, x2, y2);
 	sprite_cartoon_progressbar_config(progressbar_hd, SPRITE_CARTOON_GUI_RED, SPRITE_CARTOON_GUI_GREEN, 2);
 	sprite_cartoon_progressbar_active(progressbar_hd);
-	sprite_uichar_init(24);
 
+#ifdef CONFIG_ARCH_SUN8IW8P1	
+	flush_cache( sprite_source.screen_buf , screen_width *screen_height * 4);
+#else
+	sprite_uichar_init(24);
+#endif
 	return 0;
 #endif
 }

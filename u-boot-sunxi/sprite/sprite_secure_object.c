@@ -33,6 +33,44 @@
 
 #include "sprite_storage_crypt.h"
 
+extern int smc_set_sst_crypt_name(char *name); 
+
+static  char write_protect_item[MAX_OEM_STORE_NUM][64] ;
+
+static int __write_protect_item_id(const char *item)
+{
+
+	return 0 ;  //default can't be place in burn-key flow
+#if 0
+	int id ;
+	for(id =0; id <MAX_OEM_STORE_NUM; id ++ ){
+		if( write_protect_item[id][0] != 0 && \
+			!strncmp(item, write_protect_item[id],strnlen(item, 64) )){
+			return id ;
+		}
+	}
+	return -1 ;
+#endif 
+}
+
+static int __set_write_protect_name(const char *name)
+{
+	int id ;
+	
+	if( (id = __write_protect_item_id(name)) >0 )
+		return 0 ;/*The name had been set*/
+
+	printf("set name[%s] to write_protect list\n", name);
+
+	for(id =0; id <MAX_OEM_STORE_NUM; id ++ ){
+		if( write_protect_item[id][0] == 0 ){
+			memcpy(write_protect_item[id],name, strnlen(name, 64) );
+			break ;
+		}
+	}
+
+	return 0 ;
+}
 //#define _SO_TEST_ 
 
 /*Store source data to secure_object struct
@@ -58,8 +96,9 @@ static int wrap_secure_object(void * src, const char *name,  unsigned int len, v
 	obj->magic = STORE_OBJECT_MAGIC ;
 	strncpy( obj->name, name, 64 );
 	obj->re_encrypt = 0 ;
-	obj->version = 0;
+	obj->version = SUNXI_SECSTORE_VERSION;
 	obj->id = 0;
+	obj->write_protect = (__write_protect_item_id(name) <0) ? 0:STORE_WRITE_PROTECT_MAGIC;
 	memset(obj->reserved, 0, ARRAY_SIZE(obj->reserved) );
 	obj->actual_len = len ;
 	memcpy( obj->data, src, len);
@@ -136,7 +175,16 @@ int sunxi_secure_object_read(const char *item_name, char *buffer, int buffer_len
 #endif
 	return unwrap_secure_object((char *)so, retLen, buffer, data_len);
 }
+int sunxi_secure_object_set( const char *name , int encrypt, int write_protect, int res1, int res2, int res3)
+{
+	if(encrypt)	
+		smc_set_sst_crypt_name((char *)name);
+	if(write_protect)
+		__set_write_protect_name(name);
 
+	return 0;
+
+}
 int sunxi_secure_object_write(const char *item_name, char *buffer, int length)
 {
 	char secure_object[4096];
@@ -174,6 +222,7 @@ int sunxi_secure_object_write(const char *item_name, char *buffer, int length)
 		so->actual_len = retLen;
 		so->id = sst_oem_item_id((char *)item_name); 
 		so->re_encrypt = STORE_REENCRYPT_MAGIC;
+		so->write_protect = (__write_protect_item_id(item_name) <0) ? 0:STORE_WRITE_PROTECT_MAGIC;
 		so->crc = crc32( 0 , (void *)so, sizeof(*so)-4 ); 
 	}
 

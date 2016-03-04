@@ -292,6 +292,14 @@ struct mmc {
 			struct mmc_cmd *cmd, struct mmc_data *data);
 	void (*set_ios)(struct mmc *mmc);
 	int (*init)(struct mmc *mmc);
+	int (*update_phase)(struct mmc *mmc);
+
+	/*
+		add these members to impliment sample point auto-adaption
+	*/
+	int (*decide_retry)(struct mmc *mmc,int err_no ,uint reset_count);
+	int (*update_sdly)(struct mmc *mmc,uint sdly);
+	int (*get_detail_errno)(struct mmc *mmc);
 	struct tuning_sdly sdly_tuning;
 	unsigned b_max;
     unsigned lba;        /* number of blocks */

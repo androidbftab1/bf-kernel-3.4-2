@@ -27,6 +27,18 @@
 #define SS_N_BASE			   SS_BASE      //non security
 #define SS_S_BASE             (SS_BASE+0x800)      //security
 
+#define SS_TDQ				  (SS_N_BASE + 0x00 + 0x800*ss_base_mode)
+#define SS_CTR				  (SS_N_BASE + 0x04 + 0x800*ss_base_mode)
+#define SS_ICR				  (SS_N_BASE + 0x08 + 0x800*ss_base_mode)
+#define SS_ISR				  (SS_N_BASE + 0x0C + 0x800*ss_base_mode)
+#define SS_TLR                (SS_N_BASE + 0x10 + 0x800*ss_base_mode)
+#define SS_TSR                (SS_N_BASE + 0x14 + 0x800*ss_base_mode)
+#define SS_ERR                (SS_N_BASE + 0x18 + 0x800*ss_base_mode)
+#define SS_TPR                (SS_N_BASE + 0x1C + 0x800*ss_base_mode)
+#define SS_PKEY               (SS_N_BASE + 0x30 + 0x800*ss_base_mode)
+#define SS_PCTL               (SS_N_BASE + 0x34 + 0x800*ss_base_mode)
+
+
 #define SS_S_TDQ				(SS_S_BASE + 0x00)
 #define SS_S_CTR				(SS_S_BASE + 0x04)
 #define SS_S_ICR				(SS_S_BASE + 0x08)

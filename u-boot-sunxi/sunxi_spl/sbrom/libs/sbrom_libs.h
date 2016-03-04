@@ -32,5 +32,7 @@ extern unsigned int go_exec (unsigned int run_addr, unsigned int para_addr, int 
 
 void boot0_jump(unsigned int addr);
 
+extern void set_debugmode_flag(void);
+
 #endif
 

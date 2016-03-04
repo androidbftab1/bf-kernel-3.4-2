@@ -565,6 +565,10 @@ int mmc_send_ext_csd(struct mmc *mmc, char *ext_csd)
 	return err;
 }
 
+int mmc_update_phase(struct mmc *mmc)
+{
+	return mmc->update_phase(mmc);
+}
 
 int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 {
@@ -584,6 +588,12 @@ int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 		mmcinfo("mmc %d switch failed\n",mmc->control_num);
 	}
 
+	/* for re-update sample phase */
+	ret = mmc_update_phase(mmc);
+	if (ret) {
+		mmcinfo("mmc_switch: update clock failed after send cmd6\n");
+		return ret;
+	}
 
 	/* Waiting for the ready status */
 	mmc_send_status(mmc, timeout);
@@ -797,6 +807,12 @@ retry_scr:
 		return err;
 	}
 
+	err = mmc_update_phase(mmc);
+	if (err) {
+		mmcinfo("update clock failed after send cmd6 to switch to sd high speed mode\n");
+		return err;
+	}
+
 	if ((__be32_to_cpu(switch_status[4]) & 0x0f000000) == 0x01000000)
 		mmc->card_caps |= MMC_MODE_HS;
 
@@ -839,7 +855,7 @@ void mmc_set_ios(struct mmc *mmc)
 	mmc->set_ios(mmc);
 }
 
-void mmc_set_clock(struct mmc *mmc, u32 clock)
+void mmc_set_clock(struct mmc *mmc, uint clock)
 {
 	if (clock > mmc->f_max)
 		clock = mmc->f_max;
@@ -1093,7 +1109,15 @@ int mmc_startup(struct mmc *mmc)
 		mmcinfo("mmc %d Change speed mode failed\n",mmc->control_num);
 		return err;
 	}
-
+	
+	/* for re-update sample phase */
+	err = mmc_update_phase(mmc);
+	if (err)
+	{
+		mmcinfo("update clock failed\n");
+		return err;
+	}
+	
 	/* Restrict card's capabilities by what the host can do */
 	mmc->card_caps &= mmc->host_caps;
 

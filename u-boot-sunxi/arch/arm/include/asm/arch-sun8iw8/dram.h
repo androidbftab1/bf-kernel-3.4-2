@@ -63,6 +63,7 @@ typedef struct __DRAM_PARA
 
 }__dram_para_t;
 
+extern int init_DRAM( int type, __dram_para_t *buff );
 #endif
 
 

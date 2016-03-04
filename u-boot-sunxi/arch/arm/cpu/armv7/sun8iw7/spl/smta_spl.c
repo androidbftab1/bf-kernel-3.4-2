@@ -21,7 +21,7 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/smta.h>
-
+#include <asm/arch/clock.h>
 /*
 ************************************************************************************************************
 *

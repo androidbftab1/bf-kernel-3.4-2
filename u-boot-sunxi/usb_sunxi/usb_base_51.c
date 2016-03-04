@@ -62,6 +62,7 @@ static int eprx_recv_op(void);
 static int ep0_recv_op(void);
 
 extern int fastboot_data_flag;
+extern volatile int sunxi_usb_burn_from_boot_init;
 /*
 ************************************************************************************************************
 *
@@ -141,11 +142,14 @@ void sunxi_usb_irq(void *data)
 
         return ;
 	}
-#if 0
+#if 1
 	/* SOF */
 	if(misc_irq & USBC_INTUSB_SOF)
 	{
 	    sunxi_usb_dbg("IRQ: SOF\n");
+
+		sunxi_usb_burn_from_boot_init = 1;
+		USBC_INT_DisableUsbMiscUint(sunxi_udc_source.usbc_hd, USBC_INTUSB_SOF);
 
 		USBC_INT_ClearMiscPending(sunxi_udc_source.usbc_hd, USBC_INTUSB_SOF);
 	}
@@ -339,7 +343,7 @@ int sunxi_usb_init(int delaytime)
 
     /* ¿ªÆô reset¡¢resume¡¢suspendÖÐ¶Ï */
 	USBC_INT_EnableUsbMiscUint(sunxi_udc_source.usbc_hd, USBC_INTUSB_SUSPEND | USBC_INTUSB_RESUME	\
-													   | USBC_INTUSB_RESET);
+													   | USBC_INTUSB_RESET   | USBC_INTUSB_SOF);
 
     /* enbale ep0_tx_irq */
 	USBC_INT_EnableEp(sunxi_udc_source.usbc_hd, USBC_EP_TYPE_TX, SUNXI_USB_CTRL_EP_INDEX);

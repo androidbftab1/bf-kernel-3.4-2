@@ -33,6 +33,8 @@
 
 
 extern int sunxi_get_securemode(void);
+__u32 NAND_Print_level(void);
+
 __u32 get_wvalue(__u32 addr)
 {
 	return (smc_readl(addr));
@@ -57,7 +59,7 @@ int NAND_set_boot_mode(__u32 boot)
 
 int NAND_Print(const char * str, ...)
 {
-	if(boot_mode)
+	if((boot_mode)&&(0==NAND_Print_level()))
 		return 0;
 	else
 	{
@@ -75,7 +77,7 @@ int NAND_Print(const char * str, ...)
 
 int NAND_Print_DBG(const char * str, ...)
 {
-	if(boot_mode)
+	if((boot_mode)&&(0==NAND_Print_level()))
 		return 0;
 	else
 	{
@@ -901,6 +903,22 @@ __u32 NAND_GetNandCapacityLevel(void)
 		return CapacityLevel;
 	}
 }
+
+__u32 NAND_Print_level(void)
+{
+	int print_level;
+	script_parser_value_type_t ret;
+
+	ret = script_parser_fetch("nand0_para", "print_level", &print_level, 1);
+	if(ret!=SCRIPT_PARSER_OK) {
+		//printf("nand : get print_Level fail, %x\n",print_level);
+		return 0x0;
+	} else {
+		//printf("nand : get print_Level from script, %x\n",print_level);
+		return print_level;
+	}
+}
+
 
 static void dumphex32(char *name, char *base, int len)
 {

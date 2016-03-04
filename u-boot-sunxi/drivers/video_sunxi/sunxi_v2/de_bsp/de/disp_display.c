@@ -430,7 +430,7 @@ s32 bsp_disp_get_screen_physical_height(u32 screen_id)
 
 s32 bsp_disp_get_screen_width_from_output_type(u32 screen_id, u32 output_type, u32 output_mode)
 {
-	u32 width, height;
+	u32 width = 0, height = 0;
 
 	if(DISP_OUTPUT_TYPE_LCD == output_type) {
 		struct disp_lcd *lcd;
@@ -441,19 +441,25 @@ s32 bsp_disp_get_screen_width_from_output_type(u32 screen_id, u32 output_type, u
 		}
 	} else if(DISP_OUTPUT_TYPE_HDMI == output_type) {
 		switch(output_mode) {
-		case DISP_TV_MOD_576P:
-			width = 720;
-			height = 576;
-			break;
+		case DISP_TV_MOD_NTSC:
+		case DISP_TV_MOD_480I:
 		case DISP_TV_MOD_480P:
 			width = 720;
 			height = 480;
+			break;
+		case DISP_TV_MOD_PAL:
+		case DISP_TV_MOD_576I:
+		case DISP_TV_MOD_576P:
+			width = 720;
+			height = 576;
 			break;
 		case DISP_TV_MOD_720P_50HZ:
 		case DISP_TV_MOD_720P_60HZ:
 			width = 1280;
 			height = 720;
 			break;
+		case DISP_TV_MOD_1080I_50HZ:
+		case DISP_TV_MOD_1080I_60HZ:
 		case DISP_TV_MOD_1080P_50HZ:
 		case DISP_TV_MOD_1080P_60HZ:
 		case DISP_TV_MOD_1080P_30HZ:
@@ -462,11 +468,13 @@ s32 bsp_disp_get_screen_width_from_output_type(u32 screen_id, u32 output_type, u
 			height = 1080;
 			break;
 		case DISP_TV_MOD_3840_2160P_30HZ:
-		case DISP_TV_MOD_3840_2160P_24HZ:
 		case DISP_TV_MOD_3840_2160P_25HZ:
+		case DISP_TV_MOD_3840_2160P_24HZ:
 			width = 3840;
 			height = 2160;
 			break;
+		default:
+			DE_WRN("err:get_screen_width,output_mode=%d\n", output_mode);
 		}
 	}
 
@@ -475,7 +483,7 @@ s32 bsp_disp_get_screen_width_from_output_type(u32 screen_id, u32 output_type, u
 
 s32 bsp_disp_get_screen_height_from_output_type(u32 screen_id, u32 output_type, u32 output_mode)
 {
-	u32 width, height;
+	u32 width = 0, height = 0;
 
 	if(DISP_OUTPUT_TYPE_LCD == output_type) {
 		struct disp_lcd *lcd;
@@ -486,19 +494,25 @@ s32 bsp_disp_get_screen_height_from_output_type(u32 screen_id, u32 output_type, 
 		}
 	} else if(DISP_OUTPUT_TYPE_HDMI == output_type) {
 		switch(output_mode) {
-		case DISP_TV_MOD_576P:
-			width = 720;
-			height = 576;
-			break;
+		case DISP_TV_MOD_NTSC:
+		case DISP_TV_MOD_480I:
 		case DISP_TV_MOD_480P:
 			width = 720;
 			height = 480;
+			break;
+		case DISP_TV_MOD_PAL:
+		case DISP_TV_MOD_576I:
+		case DISP_TV_MOD_576P:
+			width = 720;
+			height = 576;
 			break;
 		case DISP_TV_MOD_720P_50HZ:
 		case DISP_TV_MOD_720P_60HZ:
 			width = 1280;
 			height = 720;
 			break;
+		case DISP_TV_MOD_1080I_50HZ:
+		case DISP_TV_MOD_1080I_60HZ:
 		case DISP_TV_MOD_1080P_50HZ:
 		case DISP_TV_MOD_1080P_60HZ:
 		case DISP_TV_MOD_1080P_30HZ:
@@ -507,11 +521,13 @@ s32 bsp_disp_get_screen_height_from_output_type(u32 screen_id, u32 output_type, 
 			height = 1080;
 			break;
 		case DISP_TV_MOD_3840_2160P_30HZ:
-		case DISP_TV_MOD_3840_2160P_24HZ:
 		case DISP_TV_MOD_3840_2160P_25HZ:
+		case DISP_TV_MOD_3840_2160P_24HZ:
 			width = 3840;
 			height = 2160;
 			break;
+		default:
+			DE_WRN("err:get_screen_height,output_mode=%d\n", output_mode);
 		}
 	}
 

@@ -25,6 +25,7 @@
 #ifndef __SECURE_STORAGE_H__
 #define __SECURE_STORAGE_H__
 
+
 extern int sunxi_secure_storage_init(void);
 extern int sunxi_secure_storage_exit(void);
 
@@ -35,7 +36,9 @@ extern int sunxi_secure_storage_read(const char *item_name, char *buffer, int le
 extern int sunxi_secure_storage_write(const char *item_name, char *buffer, int length);
 extern int sunxi_secure_storage_erase(const char *item_name);
 extern int sunxi_secure_storage_erase_all(void);
+extern int sunxi_secure_storage_erase_data_only(const char *item_name);
 
+extern int sunxi_secure_object_set(const char *item_name, int encyrpt,int replace, int, int, int);
 extern int sunxi_secure_object_write(const char *item_name, char *buffer, int length);
 extern int sunxi_secure_object_read(const char *item_name, char *buffer, int buffer_len, int *data_len);
 

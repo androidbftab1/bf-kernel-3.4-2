@@ -355,16 +355,20 @@ int disp_al_vdevice_cfg(u32 screen_id, disp_video_timings *video_info, disp_vdev
 	info.lcd_vt = video_info->ver_total_time;
 	info.lcd_vbp = video_info->ver_back_porch + video_info->ver_sync_time;
 	info.lcd_vspw = video_info->ver_sync_time;
+	info.lcd_interlace = video_info->b_interlace;
 	info.lcd_hv_syuv_fdly = para->fdelay;
+	info.lcd_hv_clk_phase = para->clk_phase;
+	info.lcd_hv_sync_polarity = para->sync_polarity;
+
 	if(LCD_HV_IF_CCIR656_2CYC == info.lcd_hv_if)
 		info.lcd_hv_syuv_seq = para->sequence;
 	else
 		info.lcd_hv_srgb_seq = para->sequence;
 	tcon_init(screen_id);
 	disp_al_lcd_get_clk_info(screen_id, &clk_info, &info);
-	clk_info.tcon_div = 11;//fixme
+	clk_info.tcon_div = 8;//fixme
 	tcon0_set_dclk_div(screen_id, clk_info.tcon_div);
-
+	tcon1_yuv_range(screen_id, 1);
 	if(0 != tcon0_cfg(screen_id, &info))
 		DE_WRN("lcd cfg fail!\n");
 	else

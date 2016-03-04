@@ -29,6 +29,7 @@
 */
 #include "common.h"
 #include "asm/arch/nand_boot0.h"
+#include "../nand_for_boot.h"
 
 
 //#pragma arm section  code="load_and_check_in_one_blk"

@@ -130,11 +130,12 @@ int sunxi_keydata_burn_by_usb(void)
 		{
 			if(!strcmp(buffer, "key_burned"))
 			{
+				printf("wrn: data has clean\n");
 				return 0;
 			}
 		}
 #else
-		if(!sunxi_secure_storage_erase("key_burned_flag"))
+		if(!sunxi_secure_storage_erase_data_only("key_burned_flag"))
 			sunxi_secure_storage_exit();
 
 		return 0;

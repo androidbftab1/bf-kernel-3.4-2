@@ -197,7 +197,7 @@ __u32 NAND_Getlsbpage_type(void)
 
 __u32 Nand_Is_lsb_page(__u32 page)
 {
-	__u32 retry_mode;
+	//__u32 retry_mode;
 	__u32 NAND_LSBPAGE_TYPE;
 	
 	NAND_LSBPAGE_TYPE = NAND_Getlsbpage_type();

@@ -526,21 +526,9 @@ int NAND_LogicInit(int boot_mode)
 	}
 	else if(boot_mode==2)
 	{
-		nftl_num = get_phy_partition_num(nand_info);
-		printf("boot_mode 2: nftl num: %d \n", nftl_num);
-		if((nftl_num<1)||(nftl_num>5))
-		{
-			printf("NB1 : nftl num: %d error \n", nftl_num);
-			return -1;
-		}
-
-        nand_partition_num = 0;
-		for(i=0; i<nftl_num; i++)
-		{
-		    nand_partition_num++;
-			printf(" init nftl: %d \n", i);
-			result = nftl_build_one(nand_info, i);
-		}
+		printf("boot_mode 2: nftl_build_all\n");
+		result = nftl_build_all(nand_info);
+		nand_partition_num = get_phy_partition_num(nand_info);
 	}
 	else
 	{
@@ -1492,7 +1480,7 @@ __s32  burn_boot0_1k_mode_secure( __u32 read_retry_type, __u32 length, __u32 Boo
 			if( PHY_SimpleErase( &para ) <0 )
 			{
 			    printf("Fail in erasing block %d.\n", i );
-	    		continue;
+	    		//continue;
 	    	}
 	    }
 		blocks_per_copy = NAND_BOOT0_PAGE_CNT_PER_COPY/pages_per_block;
@@ -1535,7 +1523,7 @@ __s32  burn_boot0_1k_mode_secure( __u32 read_retry_type, __u32 length, __u32 Boo
 			if( PHY_SimpleErase( &para ) <0 )
 			{
 			    printf("Fail in erasing block %d.\n", i );
-	    		continue;
+	    		//continue;
 	    	}
 
 	        /* 在块中烧写boot0备份 */
@@ -1657,7 +1645,7 @@ __s32  burn_boot0_lsb_mode_secure(__u32 read_retry_type,  __u32 length, __u32 Bo
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		for(j=0;j<copies_per_block;j++)
 		{
@@ -1801,7 +1789,7 @@ __s32  burn_boot0_lsb_FF_mode_secure(__u32 read_retry_type,  __u32 length, __u32
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		for(j=0;j<copies_per_block;j++)
 		{
@@ -1951,7 +1939,7 @@ __s32  burn_boot0_1k_lsb_mode_secure(__u32 read_retry_type,  __u32 length, __u32
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		for(j=0;j<copies_per_block;j++)
 		{
@@ -2120,7 +2108,7 @@ __s32  burn_boot0_lsb_FF_mode_8K(__u32 read_retry_type,  __u32 length, __u32 Boo
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		for(j=0;j<copies_per_block;j++)
 		{
@@ -2251,7 +2239,7 @@ __s32  burn_boot0_lsb_FF_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前2个page */
@@ -2402,7 +2390,7 @@ __s32  burn_boot0_lsb_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */
@@ -2506,7 +2494,7 @@ __s32  burn_boot0_1k_mode( __u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份 */
@@ -2604,7 +2592,7 @@ __s32  burn_boot0_1k_lsb_mode(__u32 read_retry_type,  __u32 length, __u32 Boot0_
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		for(j=0;j<copies_per_block;j++)
 		{
@@ -2812,7 +2800,7 @@ __s32 burn_uboot_in_one_blk(__u32 UBOOT_buf, __u32 length)
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */
@@ -2951,7 +2939,7 @@ __s32 burn_uboot_in_one_blk_lsb_mode(__u32 UBOOT_buf, __u32 length)
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 		count = 0;
 		for( k = 0;  k < pages_per_block;  k++ )

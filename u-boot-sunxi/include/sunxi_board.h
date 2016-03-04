@@ -50,6 +50,9 @@ extern int battery_charge_cartoon_rate(int rate);
 extern int battery_charge_cartoon_reset(void);
 extern int battery_charge_cartoon_degrade(int alpha_step);
 
+#ifdef CONFIG_READ_LOGO_FOR_KERNEL
+extern void sunxi_read_bootlogo(char *part_name);
+#endif
 extern int board_display_layer_request(void);
 extern int board_display_layer_release(void);
 extern int board_display_wait_lcd_open(void);
@@ -124,7 +127,9 @@ extern void sunxi_set_fel_flag(void);
 extern void sunxi_clear_fel_flag(void);
 
 extern int sunxi_verify_signature(void *buff, uint len, const char *cert_name);
-
+extern int erase_all_private_data(void);
+extern int read_private_key_by_name(const char * name, char *buffer, int buffer_len, int *data_len);
+extern int save_user_private_data(char *name, char *data, int length);
 extern void sunxi_dump(void *addr, unsigned int size);
 
 #endif /*_SUNXI_BOARD_H_ */

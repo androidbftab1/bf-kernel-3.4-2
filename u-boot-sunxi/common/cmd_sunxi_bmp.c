@@ -323,6 +323,7 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
 	int zero_num = 0;
 	bmp_image_t *bmp = (bmp_image_t *)addr;
 	int x, y, bmp_bpix;
+	int tmp;
 
 	if((bmp->header.signature[0]!='B') || (bmp->header.signature[1] !='M'))
 	{
@@ -347,6 +348,13 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
 	x = bmp->header.width;
 	y = (bmp->header.height & 0x80000000) ? (-bmp->header.height):(bmp->header.height);
 	debug("bmp x = %x, bmp y = %x\n", x, y);
+
+	tmp = bmp->header.height;
+	if (0 == (bmp->header.height & 0x80000000))
+		bmp->header.height = (-bmp->header.height);
+	memcpy(bmp_info->buffer, bmp, sizeof(bmp_header_t));
+	bmp_info->buffer += sizeof(bmp_header_t);
+	bmp->header.height = tmp;
 
 	tmp_buffer = (char *)bmp_info->buffer;
 	bmp_data = (char *)(addr + bmp->header.data_offset);
@@ -387,7 +395,7 @@ int sunxi_bmp_decode(unsigned long addr, sunxi_bmp_store_t *bmp_info)
     bmp_info->x = x;
     bmp_info->y = y;
     bmp_info->bit = bmp->header.bit_count;
-	flush_cache((uint)bmp_info->buffer, x * y * bmp_bpix);
+	flush_cache((uint)bmp_info->buffer-sizeof(bmp_header_t) , x * y * bmp_bpix+sizeof(bmp_header_t));
 
 	return 0;
 }

@@ -27,13 +27,13 @@ __u32 	pagesize;
 
 
 __u8 read_retry_reg_adr[READ_RETRY_MAX_REG_NUM] = {0};
-__u8 read_retry_default_val[1][READ_RETRY_MAX_REG_NUM] = {0};
-__s16 read_retry_val[READ_RETRY_MAX_CYCLE][READ_RETRY_MAX_REG_NUM] = {0};
-__u8 hynix_read_retry_otp_value[1][8][8] = {0};
+__u8 read_retry_default_val[1][READ_RETRY_MAX_REG_NUM] = {{0}};
+__s16 read_retry_val[READ_RETRY_MAX_CYCLE][READ_RETRY_MAX_REG_NUM] = {{0}};
+__u8 hynix_read_retry_otp_value[1][8][8] = {{{0}}};
 __u8 read_retry_mode = 0;
 __u8 read_retry_cycle = 0;
 __u8 read_retry_reg_num = 0;
-__u8 hynix16nm_read_retry_otp_value[1][8][4] ={0};
+__u8 hynix16nm_read_retry_otp_value[1][8][4] ={{{0}}};
 
 
 
@@ -1393,8 +1393,8 @@ __s32 _get_read_retry_cfg(__u8 *rr_cnt, __u8 *rr_reg_cnt, __u8 *rr_tab, __u8 *ot
 
 __s32 _read_otp_info_hynix(__u32 chip, __u8 *otp_chip)
 {
-	__u32 rb_index;
-	__u32 i, j,ndie;
+	//__u32 rb_index;
+	__u32 i, ndie;
 	__u8 *otp;
 	__u8 abuf[8]={0};
 	__u32 cfg;
@@ -1590,7 +1590,7 @@ __s32 _read_otp_info_hynix(__u32 chip, __u8 *otp_chip)
 __s32 _get_rr_value_otp_hynix(__u32 nchip)
 {
 	__s32 ret = 0;
-	__u32 i;
+	//__u32 i;
 	__u8*  otp_info_hynix_16nm;
 	__u8 rr_cnt_hynix_16nm;
 	__u8 rr_reg_cnt_hynix_16nm;

@@ -49,7 +49,7 @@ void ndump(u8 *buf, int count)
 			for(i=0;i<16;i++)
 			{
 				c = buf[j+i] & 0xff;
-				printf("%02x  ", c);
+				printf("%x  ", c);
 			}
 			rest -= 16;
 			printf("\n");
@@ -58,7 +58,7 @@ void ndump(u8 *buf, int count)
 	for(i=0;i<rest;i++)
 	{
 		c = buf[j+i] & 0xff;
-		printf("%02x  ", c);
+		printf("%x  ", c);
 	}
 
 	printf("\n");

@@ -34,9 +34,18 @@ extern int sunxi_flash_mmc_secwrite( int item, unsigned char *buf, unsigned int 
 extern int sunxi_sprite_mmc_secwrite(int item ,unsigned char *buf,unsigned int nblock);
 extern int sunxi_sprite_mmc_secread(int item ,unsigned char *buf,unsigned int nblock);
 
+int sunxi_secure_storage_erase(const char *item_name);
+int sunxi_secure_storage_erase_data_only(const char *item_name);
 
 static unsigned char secure_storage_map[4096] = {0};
 static unsigned int  secure_storage_inited = 0;
+
+static unsigned int map_dirty;
+
+static inline void set_map_dirty(void)   { map_dirty = 1; }
+static inline void clear_map_dirty(void) { map_dirty = 0;}
+static inline int try_map_dirty(void)    { return map_dirty ;}
+
 /*
 ************************************************************************************************************
 *
@@ -58,7 +67,7 @@ int sunxi_secstorage_read(int item, unsigned char *buf, unsigned int len)
 {
 	unsigned char * align ;
 	unsigned int blkcnt;
-	int ret ;
+	int ret ,workmode;
 
 	if(!uboot_spare_head.boot_data.storage_type)
 		return nand_secure_storage_read(item, buf, len);
@@ -70,8 +79,23 @@ int sunxi_secstorage_read(int item, unsigned char *buf, unsigned int len)
 			align = buf ;
 
 		blkcnt = (len+511)/512 ;
-		ret = (sunxi_flash_mmc_secread(item, align, blkcnt) == blkcnt) ? 0 : -1;
-		if(ret< 0){
+
+		workmode = uboot_spare_head.boot_data.work_mode;
+		if(workmode == WORK_MODE_BOOT || workmode == WORK_MODE_SPRITE_RECOVERY)
+		{
+			ret = (sunxi_flash_mmc_secread(item, align, blkcnt) == blkcnt) ? 0 : -1;
+		}
+		else if((workmode & WORK_MODE_PRODUCT) || (workmode == 0x30))
+		{
+			ret = sunxi_sprite_mmc_secread(item, align, blkcnt);
+		}
+		else
+		{
+			printf("workmode=%d is err\n", workmode);
+			return -1;
+		}
+
+		if(ret < 0){
 			printf("sunxi_secstorage_read fail\n");
 			return -1;
 		}
@@ -100,6 +124,7 @@ int sunxi_secstorage_write(int item, unsigned char *buf, unsigned int len)
 {
 	unsigned char * align ;
 	unsigned int blkcnt;
+	int workmode;
 
 	if(!uboot_spare_head.boot_data.storage_type)
 		return nand_secure_storage_write(item, buf, len);
@@ -111,9 +136,23 @@ int sunxi_secstorage_write(int item, unsigned char *buf, unsigned int len)
 			align=buf;
 
 		blkcnt = (len+511)/512 ;
-		return (sunxi_flash_mmc_secwrite(item, align, blkcnt) == blkcnt) ? 0 : -1;
+		workmode = uboot_spare_head.boot_data.work_mode;
+		if(workmode == WORK_MODE_BOOT || workmode == WORK_MODE_SPRITE_RECOVERY)
+		{
+			return (sunxi_flash_mmc_secwrite(item, align, blkcnt) == blkcnt) ? 0 : -1;
+		}
+		else if((workmode & WORK_MODE_PRODUCT) || (workmode == 0x30))
+		{
+			return sunxi_sprite_mmc_secwrite(item, align, blkcnt);
+		}
+		else
+		{
+			printf("workmode=%d is err\n", workmode);
+			return -1;
+		}
 	}
 }
+
 /*
 ************************************************************************************************************
 *
@@ -145,28 +184,29 @@ static int __probe_name_in_map(unsigned char *buffer, const char *item_name, int
 		while(buf_start[i] != ':')
 		{
 			name[i] = buf_start[i];
-			i ++;
+			i++;
 		}
-		i ++;j=0;
+		i++;j=0;
 		while( (buf_start[i] != ' ') && (buf_start[i] != '\0') )
 		{
 			length[j] = buf_start[i];
-			i ++;j++;
+			i++;j++;
 		}
 
-		printf("name in map %s\n", name);
 		if(!strcmp(item_name, (const char *)name))
 		{
 			buf_start += strlen(item_name) + 1;
 			*len = simple_strtoul((const char *)length, NULL, 10);
+			printf("name in map %s\n", name);
 			return index;
 		}
-		index ++;
+		index++;
 		buf_start += strlen((const char *)buf_start) + 1;
 	}
 
 	return -1;
 }
+
 /*
 ************************************************************************************************************
 *
@@ -191,13 +231,13 @@ static int __fill_name_in_map(unsigned char *buffer, const char *item_name, int 
 
 	while(*buf_start != '\0')
 	{
-		printf("name in map %s\n", buf_start);
 
 		name_len = 0;
 		while(buf_start[name_len] != ':')
 			name_len ++;
 		if(!memcmp((const char *)buf_start, item_name, name_len))
 		{
+			printf("name in map %s\n", buf_start);
 			return index;
 		}
 		index ++;
@@ -234,14 +274,13 @@ static int __discard_name_in_map(unsigned char *buffer, const char *item_name)
 
 	while(*buf_start != '\0')
 	{
-		printf("name in map %s\n", buf_start);
 
 		name_len = 0;
 		while(buf_start[name_len] != ':')
 			name_len ++;
 		if(!memcmp((const char *)buf_start, item_name, name_len))
 		{
-			last_start = buffer + strlen((const char *)buf_start) + 1;
+			last_start = buf_start + strlen((const char *)buf_start) + 1;
 			if(*last_start == '\0')
 			{
 				memset(buf_start, 0, strlen((const char *)buf_start));
@@ -259,6 +298,7 @@ static int __discard_name_in_map(unsigned char *buffer, const char *item_name)
 
 	return -1;
 }
+
 /*
 ************************************************************************************************************
 *
@@ -327,12 +367,15 @@ int sunxi_secure_storage_exit(void)
 
 		return -1;
 	}
-	ret = sunxi_secstorage_write(0, secure_storage_map, 4096);
-	if(ret<0)
-	{
-		printf("write secure storage map\n");
+	if( try_map_dirty() ){
+		ret = sunxi_secstorage_write(0, secure_storage_map, 4096);
+		if(ret<0)
+		{
+			printf("write secure storage map\n");
 
-		return -1;
+			return -1;
+		}
+		clear_map_dirty();
 	}
 	secure_storage_inited = 0;
 
@@ -526,6 +569,7 @@ int sunxi_secure_storage_read(const char *item_name, char *buffer, int buffer_le
 int sunxi_secure_storage_write(const char *item_name, char *buffer, int length)
 {
 	int ret, index;
+	int len = 0;
 	char tmp_buf[4096];
 
 	if(!secure_storage_inited)
@@ -534,13 +578,35 @@ int sunxi_secure_storage_write(const char *item_name, char *buffer, int length)
 
 		return -1;
 	}
-	index = __fill_name_in_map(secure_storage_map, item_name, length);
+
+	index = __probe_name_in_map(secure_storage_map, item_name, &len);
 	if(index < 0)
 	{
-		printf("write secure storage block %d name %s overrage\n", index, item_name);
-
-		return -1;
+		index = __fill_name_in_map(secure_storage_map, item_name, length);
+		if(index < 0)
+		{
+			printf("write secure storage block %d name %s overrage\n", index, item_name);
+			return -1;
+		}
 	}
+	else
+	{
+		printf("There is the same name in the secure storage, try to erase it\n");
+		if(len != length)
+		{
+			printf("the length is not match with key has store in secure storage\n");
+			return -1;
+		}
+		else
+		{
+			if( sunxi_secure_storage_erase_data_only( item_name ) < 0 )
+			{
+				printf("Erase item %s fail\n",item_name);
+				return -1;
+			}
+		}
+	}
+
 	memset(tmp_buf, 0x0, 4096);
 	memcpy(tmp_buf, buffer, length);
 	ret = sunxi_secstorage_write(index, (unsigned char *)tmp_buf, 4096);
@@ -550,7 +616,57 @@ int sunxi_secure_storage_write(const char *item_name, char *buffer, int length)
 
 		return -1;
 	}
+	set_map_dirty();
 	printf("write secure storage: %d ok\n", index);
+
+	return 0;
+}
+
+/*
+************************************************************************************************************
+*
+*                                             function
+*
+*    name          :
+*
+*    parmeters     :
+*
+*    return        :
+*
+*    note          :
+*
+*
+************************************************************************************************************
+*/
+
+int sunxi_secure_storage_erase_data_only(const char *item_name)
+{
+	int ret, index, len;
+	unsigned char  buffer[4096];
+
+	if(!secure_storage_inited)
+	{
+		printf("%s err: secure storage has not been inited\n", __func__);
+
+		return -1;
+	}
+	index = __probe_name_in_map(secure_storage_map, item_name, &len);
+	if(index < 0)
+	{
+		printf("no item name %s in the map\n", item_name);
+
+		return -2;
+	}
+	memset(buffer, 0xff, 4096);
+	ret = sunxi_secstorage_write(index, buffer, 4096);
+	if(ret<0)
+	{
+		printf("erase secure storage block %d name %s err\n", index, item_name);
+
+		return -1;
+	}
+	set_map_dirty();
+	printf("erase secure storage: %d data only ok\n", index);
 
 	return 0;
 }
@@ -598,6 +714,7 @@ int sunxi_secure_storage_erase(const char *item_name)
 
 		return -1;
 	}
+	set_map_dirty();
 	printf("erase secure storage: %d ok\n", index);
 
 	return 0;

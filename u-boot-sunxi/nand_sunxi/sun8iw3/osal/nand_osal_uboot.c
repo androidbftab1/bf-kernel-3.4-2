@@ -27,6 +27,11 @@
 #include <asm/arch/dma.h>
 #include <sys_config.h>
 
+#define  NAND_DRV_VERSION_0		0x2
+#define  NAND_DRV_VERSION_1		0x25
+#define  NAND_DRV_DATE			0x20150409
+#define  NAND_DRV_TIME			0x1122
+
 #define get_wvalue(addr)	(*((volatile unsigned long  *)(addr)))
 #define put_wvalue(addr, v)	(*((volatile unsigned long  *)(addr)) = (unsigned long)(v))
 
@@ -544,7 +549,7 @@ void NAND_PIORelease(__u32 nand_index)
 {
 	int ret;
 	
-	ret = gpio_release(gpio_hdl, 1);
+	ret = gpio_release(gpio_hdl, 2);
 	if(ret)
 		printf("nand gpio release fail\n");
 	return;
@@ -803,6 +808,21 @@ __u32 NAND_GetNandIDNumCtrl(void)
 	}
 }
 
+__s32 Nand_support_sorting(void)
+{
+	int sorting_flag;
+	script_parser_value_type_t ret;
+
+	ret = script_parser_fetch("nand0_para", "sorting_flag", &sorting_flag, 1);
+	if(ret!=SCRIPT_PARSER_OK) {
+		printf("nand : get sorting_flag fail, %x\n",sorting_flag);
+		return -1;
+	} else {
+		printf("nand : get sorting_flag from script, %x\n",sorting_flag);
+		return sorting_flag;
+	}
+}
+
 static void dumphex32(char *name, char *base, int len)
 {
 	__u32 i;
@@ -857,4 +877,17 @@ void NAND_ShowEnv(__u32 type, char *name, __u32 len, __u32 *val)
 
     return ;
 }
+
+void NAND_Print_Version(void)
+{
+	__u32 val[4] = {0};
+	
+	val[0] = NAND_DRV_VERSION_0;
+	val[1] = NAND_DRV_VERSION_1;
+	val[2] = NAND_DRV_DATE;
+	val[3] = NAND_DRV_TIME;
+	NAND_ShowEnv(0, "nand version", 4, val);
+
+}
+
 

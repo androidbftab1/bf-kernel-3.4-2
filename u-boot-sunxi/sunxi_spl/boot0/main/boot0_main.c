@@ -24,17 +24,30 @@
 #include <asm/arch/timer.h>
 #include <asm/arch/uart.h>
 #include <asm/arch/dram.h>
+#include <asm/arch/rtc_region.h>
+#include <asm/arch/gpio.h>
+#include "../libs/sbrom_libs.h"
 #ifdef CONFIG_BOOT_A15
 #include <asm/arch/cpu_switch.h>
 #endif
 
 extern const boot0_file_head_t  BT0_head;
+extern const boot0_extend_config boot0_config;
 
 static void print_version(void);
+static void print_commit_log(void);
 static int boot0_clear_env(void);
 #ifdef	SUNXI_OTA_TEST
 static void print_ota_test(void);
 #endif
+
+#ifdef CONFIG_BOOT0_POWER
+extern int pmu_set_vol(int set_vol, int onoff);
+#endif
+
+extern int load_boot1(void);
+
+extern void set_debugmode_flag(void);
 
 void __attribute__((weak)) bias_calibration(void)
 {
@@ -53,20 +66,24 @@ void main( void )
 	__u32 status;
 	__s32 dram_size;
 	int   ddr_aotu_scan = 0;
+#ifdef CONFIG_BOOT_A15
 	special_gpio_cfg a15_power_gpio;	//a15 extern power enabel gpio
+#endif
     __u32 fel_flag;
 	__u32 boot_cpu=0;
 
 	bias_calibration();
     timer_init();
     sunxi_serial_init( BT0_head.prvt_head.uart_port, (void *)BT0_head.prvt_head.uart_ctrl, 6 );
-        set_debugmode_flag();	
+        set_debugmode_flag();
 	if( BT0_head.prvt_head.enable_jtag )
     {
     	boot_set_gpio((normal_gpio_cfg *)BT0_head.prvt_head.jtag_gpio, 6, 1);
     }
 	printf("HELLO! BOOT0 is starting!\n");
 	print_version();
+	print_commit_log();
+
 #ifdef	SUNXI_OTA_TEST
 	print_ota_test();
 #endif
@@ -132,6 +149,13 @@ void main( void )
 //  printf("BT0_head.boot_head.boot_cpu=0x%x\n", BT0_head.boot_head.boot_cpu);
 #endif
 	mmu_setup();
+
+#ifdef CONFIG_BOOT0_POWER
+	if(boot0_config.if_reduce_power_waste == 1)
+	{
+		pmu_set_vol(1100, 1);
+	}
+#endif
 
     ddr_aotu_scan = 0;
 	dram_size = init_DRAM(ddr_aotu_scan, (void *)BT0_head.prvt_head.dram_para);
@@ -208,11 +232,19 @@ __boot0_entry_err0:
 */
 static void print_version(void)
 {
+
 	printf("boot0 version : %s\n", BT0_head.boot_head.platform + 2);
 
 	return;
 }
 
+extern char boot0_hash_value[64];
+static void print_commit_log(void)
+{
+        printf("boot0 commit : %s \n",boot0_hash_value);
+
+        return ;
+}
 /*
 ************************************************************************************************************
 *

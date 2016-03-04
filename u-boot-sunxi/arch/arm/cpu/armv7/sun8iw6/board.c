@@ -38,6 +38,7 @@
 #include <sys_config.h>
 #include <smc.h>
 #include <rsb.h>
+#include <i2c.h>
 /* The sunxi internal brom will try to loader external bootloader
  * from mmc0, nannd flash, mmc2.
  * We check where we boot from by checking the config
@@ -148,6 +149,7 @@ struct bias_set
 	int  index;
 };
 
+extern int plat_get_chip_id(void);
 int power_config_gpio_bias(void)
 {
 	char gpio_bias[32], gpio_name[32];
@@ -163,7 +165,18 @@ int power_config_gpio_bias(void)
 	struct bias_set bias_vol_config[8] =
 		{ {1800, 0}, {2500, 6}, {2800, 9}, {3000, 0xa}, {3300, 0xd}, {0, 0} };
 
-	main_hd = script_parser_fetch_subkey_start("gpio_bias");
+	int  chipid;
+
+	chipid = plat_get_chip_id();
+	//0x18:axp_818, 0x13:axp_813 0x03:axp_803 0x0: key not burn
+	if(chipid == 0x03)
+	{
+		main_hd = script_parser_fetch_subkey_start("gpio_bias_ext");
+	}
+	else
+	{
+		main_hd = script_parser_fetch_subkey_start("gpio_bias");
+	}
 
 	index = 0;
 	while(1)
@@ -380,6 +393,100 @@ __END:
     return ;
 }
 
+#define AC200_ADDR             	0x10
+#define AC200_ID_REG						0x0
+extern int plat_get_chip_id(void);
+void update_cfg_for_audio_and_tv(void)
+{
+	int chipid;
+	int tv_ac200_used = 0, tv_ac100_used = 0;
+	int err_flag = 0;
+	int board_serial = 0;
+	int twi_ac200_used = 0;
+	unsigned char ac200_id = 0;
+	int gm7121_tv_used = 0;
+	
+	if(script_parser_fetch("product", "board_serial", &board_serial, sizeof(int)/4) || board_serial != 2)
+	{
+		printf("no find board_serial or board_serial != 2\n");
+		return ;
+	}
+
+	chipid = plat_get_chip_id();
+
+	//0x18:axp_818, 0x13:axp_813 0x03:axp_803 0x0: key not burn
+	if (chipid == 0x03)
+	{
+		tv_ac100_used = 0;
+		if(script_parser_patch("acx0","ac100_used", &tv_ac100_used, sizeof(int)/4))
+		{
+			printf("update ac100_used cfg error\n");
+			err_flag ++;
+		}		
+	}
+	else
+	{
+		tv_ac100_used = 1;
+		if(script_parser_patch("acx0","ac100_used",&tv_ac100_used, sizeof(int)/4))
+		{
+			printf("update ac100_used cfg error\n");
+			err_flag ++;
+		}	
+	}
+	
+	// ac200 use twi0/twi1
+	if(script_parser_fetch("acx0","twi_ac200_used", &twi_ac200_used, sizeof(int)/4))
+	{
+			printf("no find twi_ac200_used\n");
+			//return ;
+	}
+	
+	if (i2c_read(twi_ac200_used, AC200_ADDR, AC200_ID_REG, 1, &ac200_id, 1))
+	{
+		printf("can't find ac200\n");
+		tv_ac200_used = 0;
+		gm7121_tv_used = 1;	
+	}
+	else
+	{
+		printf("find ac200\n");
+		tv_ac200_used = 1;
+		gm7121_tv_used = 0;	
+	}
+	
+	if(script_parser_patch("acx0","ac200_used", &tv_ac200_used, sizeof(int)/4))
+	{
+		printf("no find twi_ac200_used\n");
+		return ;
+	}
+	if(script_parser_patch("tv_gm7121_para","tv_used", &gm7121_tv_used, sizeof(int)/4))
+	{
+		printf("update [tv_ac100_para] cfg error\n");
+		err_flag ++;
+	}
+	if(script_parser_patch("tv_ac200_para","tv_used", &tv_ac200_used, sizeof(int)/4))
+	{
+		printf("update [tv_ac100_para] cfg error\n");
+		err_flag ++;
+	}
+	if(script_parser_patch("pwm0_para","pwm_used", &tv_ac200_used, sizeof(int)/4))
+	{
+		printf("update [pwm0_para]pwn_used cfg error\n");
+		err_flag ++;
+	}
+	
+	if(!err_flag)
+	{
+		printf("update tv/audio cfg sucess\n");
+	}
+#if 0
+	printf("tv_ac100_used=%d\n", tv_ac100_used);
+	printf("tv_ac200_used=%d\n", tv_ac200_used);
+	printf("pwm_used=%d\n", tv_ac200_used);
+	printf("ac200_used=%d\n", tv_ac200_used);
+	printf("gm7121_tv_used=%d\n", gm7121_tv_used);
+#endif
+}
 
 int power_source_init(void)
 {
@@ -441,6 +548,7 @@ int power_source_init(void)
 	power_limit_init();
     // AXP and RTC use the same interrupt line, so disable RTC INT in uboot
     disable_rtc_int();
+    update_cfg_for_audio_and_tv();
 
 	return 0;
 }

@@ -481,8 +481,8 @@ int arch_interrupt_init (void)
 	{
 		sunxi_int_handlers[i].m_data = default_isr;
 	}
-	if((uboot_spare_head.boot_data.secureos_exist == SUNXI_SECURE_MODE_NO_SECUREOS) ||
-		(uboot_spare_head.boot_data.secureos_exist == SUNXI_NORMAL_MODE))
+	if((gd->securemode == SUNXI_SECURE_MODE_NO_SECUREOS) ||
+		(gd->securemode == SUNXI_NORMAL_MODE) || (gd->securemode == SUNXI_SECURE_MODE))
 	{
 		printf("gic: normal or no secure os mode\n");
 		gic_distributor_init();

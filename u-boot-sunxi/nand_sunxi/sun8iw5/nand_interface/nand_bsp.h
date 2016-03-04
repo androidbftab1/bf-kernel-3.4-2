@@ -189,6 +189,8 @@ extern __u32 NAND_GetBadBlockFlagPos(void);
 extern __u32 NAND_GetValidBlkRatio(void);
 extern void  NAND_GetVersion(unsigned char *oob_buf);
 extern __u32 NAND_GetReadRetryType(void);
+extern __s32 PHY_Nand_Sorting_IsBadblock(__u32 chip_num,__u32 blk_num);
+
 
 struct _nand_info* NandHwInit(void);
 __s32 NandHwExit(void);

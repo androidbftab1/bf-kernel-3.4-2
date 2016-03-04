@@ -186,6 +186,20 @@
 #define PART_ACCESS_MASK	(0x7)
 #define PART_SUPPORT		(0x1)
 
+#define MMC_CLK_400K					0
+#define MMC_CLK_25M						1
+#define MMC_CLK_50M						2
+#define MMC_CLK_50MDDR				3
+#define MMC_CLK_50MDDR_8BIT		4
+#define MMC_CLK_100M					5
+#define MMC_CLK_200M					6
+#define MMC_CLK_MOD_NUM				7
+
+struct sunxi_mmc_clk_dly {
+	u32 mode;
+	u32 oclk_dly;
+	u32 sclk_dly;
+};
 
 
 /*MMC HOST FUNC*/
@@ -289,6 +303,7 @@ struct mmc {
 			struct mmc_cmd *cmd, struct mmc_data *data);
 	void (*set_ios)(struct mmc *mmc);
 	int (*init)(struct mmc *mmc);
+	struct sunxi_mmc_clk_dly mmc_clk_dly[MMC_CLK_MOD_NUM];
 	struct tuning_sdly sdly_tuning;
 	unsigned b_max;
     unsigned lba;        /* number of blocks */

@@ -32,9 +32,10 @@
 #include "common.h"
 #include <private_boot0.h>
 
+extern char boot0_hash_value[64];
 const boot0_file_head_t  BT0_head = {
 	                                  {
-	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot0_file_head_t ) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
+	      /* jump_instruction */          ( 0xEA000000 | ( ( ( sizeof( boot0_file_head_t ) + sizeof(boot0_hash_value) + sizeof( boot0_extend_config ) + sizeof( int ) - 1 ) / sizeof( int ) - 2 ) & 0x00FFFFFF ) ),
 							   		      BOOT0_MAGIC,
 							   		      STAMP_VALUE,
 #ifdef ALIGN_SIZE_8K
@@ -48,7 +49,7 @@ const boot0_file_head_t  BT0_head = {
 							   		      },
 							   		      CONFIG_BOOT0_RET_ADDR,
 							   		      CONFIG_BOOT0_RUN_ADDR,
-							   		      EGON_VERSION,
+							   		      0,
 							   		      {
 							   		      	0, 0, '4','.','0','.','0',0
 							   		      },

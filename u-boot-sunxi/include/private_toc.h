@@ -109,10 +109,10 @@ typedef struct sbrom_toc0_config
 	unsigned int        boot_cpu;           //
 	special_gpio_cfg  a15_power_gpio;  //the gpio config is to a15 extern power enable gpio
 	unsigned int        next_exe_pa;
-        unsigned int        secure_without_OS;   //secure boot without semelis
-        unsigned int        debug_mode;         //1:turn on printf; 0 :turn off printf
-	unsigned int      	res[3];   			// 总共1024字节
-
+    unsigned int        secure_without_OS;   //secure boot without semelis
+    unsigned int        debug_mode;         //1:turn on printf; 0 :turn off printf
+    unsigned int		card_work_mode;
+	unsigned int      	res[2];   			// 总共1024字节
 }
 sbrom_toc0_config_t;
 

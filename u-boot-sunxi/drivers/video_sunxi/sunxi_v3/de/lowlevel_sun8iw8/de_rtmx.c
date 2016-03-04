@@ -365,9 +365,9 @@ int de_rtmx_query_irq(unsigned int sel)
 	int base = glb_ctl_block[sel].off;
 	unsigned int irq_flag;
 
-	irq_flag = readl((void *)(base + 0x04));
+	irq_flag = disp_readl((void *)(base + 0x04));
 	if(irq_flag & 0x1) {
-		writel(irq_flag, (void *)(base + 0x04));
+		disp_writel(irq_flag, (void *)(base + 0x04));
 		return 1;
 	}
 

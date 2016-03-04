@@ -25,6 +25,7 @@
 #include "common.h"
 #include "asm/armv7.h"
 #include <private_toc.h>
+#include <asm/arch/uart.h>
 
 extern sbrom_toc0_config_t *toc0_config ;
 extern int debug_mode;
@@ -70,6 +71,6 @@ void set_debugmode_flag(void)
 	else
 		debug_mode = 0;
 	return ;
-		
+
 }
 

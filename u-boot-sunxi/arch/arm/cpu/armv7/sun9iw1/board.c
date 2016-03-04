@@ -711,8 +711,16 @@ int sunxi_probe_securemode(void)
 	}
 	else		 //读到数据非0，那么只能是未使能secure
 	{
-		gd->securemode = SUNXI_NORMAL_MODE;
-		printf("normal mode\n");
+		if(uboot_spare_head.boot_data.secureos_exist == 0)
+                {
+                        printf("SUNXI_SECURE_MODE \n");
+                        gd->securemode = SUNXI_SECURE_MODE;
+                }
+                else
+                {
+                        gd->securemode = SUNXI_NORMAL_MODE;
+		        printf("normal mode\n");
+                }
 	}
 
 	return 0;

@@ -29,7 +29,12 @@ extern int create_heap(unsigned int pHeapHead, unsigned int nHeapSize);
 
 extern unsigned int go_exec (unsigned int run_addr, unsigned int para_addr, int out_secure);
 
-void boot0_jump(unsigned int addr);
+extern void boot0_jump(unsigned int addr);
+
+extern void set_dram_para(void *dram_addr , __u32 dram_size, __u32 boot_cpu);
+
+extern __s32 check_sum( __u32 *mem_base, __u32 size );
+extern __s32 check_magic( __u32 *mem_base, const char *magic );
 
 #endif
 

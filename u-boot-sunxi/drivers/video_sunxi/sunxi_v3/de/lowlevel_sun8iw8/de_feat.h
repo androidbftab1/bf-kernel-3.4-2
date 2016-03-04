@@ -17,9 +17,9 @@
 #define DE_LVDS_CLK "lvds"
 #define DE_DSI_CLK0 "mipi_dsi0"
 #define DE_DSI_CLK1 "mipi_dsi1"
-#define DE_LCD_CLK_SRC "pll_video0"
+#define DE_LCD_CLK_SRC "pll_video"
 
-#define DE_CLK_SRC "pll_de"
+#define DE_CLK_SRC "pll_periph0"
 #define DE_CORE_CLK "de"
 #define DE_CORE_CLK_RATE 250000000
 

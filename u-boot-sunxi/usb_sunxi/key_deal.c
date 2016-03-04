@@ -73,7 +73,7 @@ int sunxi_deal_hdcp_key(char *keydata, int keylen)
 		return -1;
 	}
 
-	ret = sunxi_secure_storage_write("hdcpkey", buffer, real_len);
+	ret = sunxi_secure_object_write("hdcpkey", buffer, real_len);
 	if(ret<0)
 	{
 		printf("sunxi secure storage write failed\n");

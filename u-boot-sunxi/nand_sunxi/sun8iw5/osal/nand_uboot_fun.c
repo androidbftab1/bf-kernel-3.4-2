@@ -1172,7 +1172,7 @@ __s32  burn_boot0_1k_mode( __u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份 */
@@ -1256,7 +1256,7 @@ __s32  burn_boot0_lsb_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */
@@ -1373,13 +1373,13 @@ __s32  burn_boot0_lsb_FF_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
 		if(page_size == 16384)
 		{
 			/* 在块中烧写boot0备份, lsb mode下，每个块只能写前2个page */
-			for( k = 0;  k < 5;  k++ )
+			for( k = 0;  k < pages_per_block;  k++ )
 			{
 				if(k<2)
 				{
@@ -1393,7 +1393,7 @@ __s32  burn_boot0_lsb_FF_mode(__u32 read_retry_type, __u32 Boot0_buf )
 						printf("Warning. Fail in writing page %d in block %d.\n", k, i );
 					}
 				}
-				if(k == 3)
+				else if(((k % 2 == 1)&&(k != 255)) && (k > 2))
 				{
 					para.chip  = 0;
 					para.block = i;
@@ -1442,7 +1442,7 @@ __s32  burn_boot0_lsb_FF_mode(__u32 read_retry_type, __u32 Boot0_buf )
 					if(((para.page % 2 == 1)&&(para.page != 255)) || (para.page == 0))
 					{
 						cfg.ecc_mode = 8;
-						cfg.page_size_kb = 4;
+						cfg.page_size_kb = (page_size/1024) - 1;
 						cfg.sequence_mode = 1;
 						para.mainbuf = (void *) (Boot0_buf + count * 4096);
 						if( PHY_SimpleWrite_CFG( &para , &cfg) <0)
@@ -1518,7 +1518,7 @@ __s32  burn_boot0_1k_fullpage_mode(__u32 read_retry_type, __u32 Boot0_buf )
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
 		oob_buf[0] = 0xff;
@@ -1660,7 +1660,7 @@ __s32 burn_uboot_in_one_blk(__u32 UBOOT_buf, __u32 length)
 		if( PHY_SimpleErase( &para ) <0 )
 		{
 		    printf("Fail in erasing block %d.\n", i );
-    		continue;
+    		//continue;
     	}
 
         /* 在块中烧写boot0备份, lsb mode下，每个块只能写前4个page */

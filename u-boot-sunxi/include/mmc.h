@@ -540,6 +540,7 @@ struct mmc {
 			struct mmc_cmd *cmd, struct mmc_data *data);
 	void (*set_ios)(struct mmc *mmc);
 	int (*init)(struct mmc *mmc);
+	int (*update_phase)(struct mmc *mmc);
 
 	/*
 		add these members to impliment sample point auto-adaption

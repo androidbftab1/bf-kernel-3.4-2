@@ -47,6 +47,8 @@ __u32 page_with_bad_block = 0;
 
 extern  struct __NandStorageInfo_t  NandStorageInfo;
 
+extern __u32 Nand_Is_lsb_page(__u32 page);
+
 __s32 NF_open( void )
 {
 	__u32 blk_for_boot1;

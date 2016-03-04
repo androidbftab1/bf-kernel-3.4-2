@@ -186,5 +186,6 @@ void set_gpio_gate(void)
 void set_ccmu_normal(void)
 {
 	writel(7, CCM_SECURITY_REG);
+	writel(0xfff, DMA_BASE + 0x20);
 }
 

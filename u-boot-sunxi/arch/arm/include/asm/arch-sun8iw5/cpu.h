@@ -129,6 +129,8 @@
 #define SUNXI_BROM_BASE				0XFFFF0000		/* 32K */
 
 #define SUNXI_CPU_CFG              (SUNXI_TIMER_BASE + 0x13c)
+#define SUNXI_RTC_BASE				0X01F00000
+#define RTC_GENERAL_PURPOSE_REG(n)  (SUNXI_RTC_BASE + 0x100 + (n) * 0x4)
 
 #ifndef __ASSEMBLY__
 /* boot type */

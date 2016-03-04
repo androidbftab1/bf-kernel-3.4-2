@@ -131,6 +131,7 @@ int (* sunxi_sprite_phyread_pt) (unsigned int start_block, unsigned int nblock, 
 int (* sunxi_sprite_phywrite_pt)(unsigned int start_block, unsigned int nblock, void *buffer) = sunxi_null_op;
 #ifdef CONFIG_SUNXI_SPINOR
 int (* sunxi_sprite_datafinish_pt) (void) = sunxi_null_datafinish;
+int (* sunxi_sprite_datafinish_card_pt) (void) = sunxi_null_datafinish;
 #endif
 
 
@@ -365,6 +366,11 @@ sunxi_flash_spinor_datafinish(void)
 {
 	return spinor_datafinish();
 }
+static int
+sunxi_flash_spinor_card_datafinish(void)
+{
+	return spinor_datafinish_card();
+}
 
 static int
 sunxi_flash_spinor_flush(void)
@@ -466,6 +472,12 @@ int sunxi_sprite_setdata_finish(void)
 {
 	return sunxi_sprite_datafinish_pt();
 }
+
+int sunxi_sprite_setdata_card_finish(void)
+{
+	return sunxi_sprite_datafinish_card_pt();
+}
+
 #endif
 
 
@@ -673,22 +685,21 @@ int sunxi_flash_handle_init(void)
 		    script_parser_patch("nand1_para", "nand1_used", &nand_used, 1);
 		    script_parser_patch("mmc2_para",  "sdc_used",   &sdc2_used, 1);
 
-		    tick_printf("NAND: ");
+			tick_printf("NAND: ");
 			if (workmode == WORK_MODE_BOOT) {
-		    	if(nand_uboot_init(1))
-		    	{
-		    		tick_printf("nand init fail\n");
+				if(nand_uboot_init(1))
+				{
+					tick_printf("nand init fail\n");
 					return -1;
-		    	}
+				}
 			}
 			else if (workmode == WORK_MODE_SPRITE_RECOVERY)
 			{
-		    	if(nand_uboot_init(2))	
-		    	{
-		    		tick_printf("nand init fail\n");
+				if(nand_uboot_init(2))
+				{
+					tick_printf("nand init fail\n");
 					return -1;
-		    	}
-				
+				}
 			}
 			//flash_size = nand_uboot_get_flash_size();
 			//flash_size <<= 9;
@@ -757,6 +768,7 @@ int sunxi_flash_handle_init(void)
 			sunxi_sprite_size_pt  = sunxi_flash_spinor_size;
 			sunxi_sprite_flush_pt = sunxi_flash_spinor_flush;
 			sunxi_sprite_datafinish_pt = sunxi_flash_spinor_datafinish;
+			sunxi_sprite_datafinish_card_pt = sunxi_flash_spinor_card_datafinish;
 			printf("sunxi sprite has installed spi function\n");
 			uboot_spare_head.boot_data.storage_type = 3;
 		}

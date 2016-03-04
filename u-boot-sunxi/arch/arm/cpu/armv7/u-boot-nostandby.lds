@@ -37,7 +37,10 @@ SECTIONS
 	{
 		SOCDIR/spare_head.o	(.data)
 	}
-
+        .hash   :
+        {
+                SOCDIR/../uboot_hash.o         (.data)
+        }
 	. = ALIGN(1);
 
 	.text	:

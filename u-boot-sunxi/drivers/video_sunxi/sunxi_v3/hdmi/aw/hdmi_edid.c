@@ -1,10 +1,12 @@
 #include "hdmi_core.h"
 
+#define HDMI_EDID_LEN 1024
+
 static __s32 is_hdmi;
 static __s32 is_yuv;
 __s32 is_exp = 0;
 __u32		rgb_only = 0;
-__u8		EDID_Buf[1024];
+__u8		EDID_Buf[HDMI_EDID_LEN];
 __u8 		Device_Support_VIC[512];
 
 static __u8 exp0[16] =
@@ -52,7 +54,7 @@ __s32 DDC_Read(char cmd,char pointer,char offset,int nbyte,char * pbuf)
 static void GetEDIDData(__u8 block,__u8 *buf)
 {
 	__u8 i;
-	char * pbuf = (char *)(buf + 128*block);
+	char * pbuf = (char *)buf + 128*block;
 	__u8 offset = (block&0x01)? 128:0;
 
 	DDC_Read(Explicit_Offset_Address_E_DDC_Read,block>>1,offset,128,pbuf);
@@ -424,5 +426,10 @@ __u32 GetIsHdmi(void)
 __u32 GetIsYUV(void)
 {
 	return is_yuv;
+}
+
+__s32 GetEdidInfo(void)
+{
+	return (__s32)EDID_Buf;
 }
 

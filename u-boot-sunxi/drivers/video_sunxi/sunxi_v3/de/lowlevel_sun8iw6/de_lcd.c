@@ -271,8 +271,15 @@ static s32 tcon0_cfg_mode_auto(u32 sel, disp_panel_para * panel)
 	start_delay = panel->lcd_vt-panel->lcd_y-10;
   if(panel->lcd_hv_if == LCD_HV_IF_CCIR656_2CYC)
   {
-      lcd_dev[sel]->tcon0_basic0.bits.y = panel->lcd_y/2-1;
-      lcd_dev[sel]->tcon0_basic2.bits.vt = (panel->lcd_hv_syuv_fdly == LCD_HV_SRGB_FDLY_2LINE)? 525:625;
+	if(panel->lcd_interlace){
+		lcd_dev[sel]->tcon0_basic0.bits.y = panel->lcd_y/2 - 1;
+		lcd_dev[sel]->tcon0_basic2.bits.vt = (panel->lcd_hv_syuv_fdly == LCD_HV_SRGB_FDLY_2LINE)? 525:625;
+	  }
+      else {
+		lcd_dev[sel]->tcon0_basic0.bits.y = panel->lcd_y - 1;
+		lcd_dev[sel]->tcon0_basic2.bits.vt = (panel->lcd_hv_syuv_fdly == LCD_HV_SRGB_FDLY_2LINE)? 1050:1250;
+	  }
+
       lcd_dev[sel]->tcon0_basic1.bits.ht = (panel->lcd_ht==0)? 0:(panel->lcd_ht*2-1);
       lcd_dev[sel]->tcon0_basic1.bits.hbp = (panel->lcd_hbp==0)? 0:(panel->lcd_hbp*2-1);
       lcd_dev[sel]->tcon0_basic3.bits.hspw = (panel->lcd_hspw==0)? 0:(panel->lcd_hspw*2-1);
@@ -391,6 +398,7 @@ s32 tcon0_cfg(u32 sel, disp_panel_para * panel)
 		lcd_dev[sel]->tcon0_hv_ctl.bits.srgb_seq = panel->lcd_hv_srgb_seq;
 		lcd_dev[sel]->tcon0_hv_ctl.bits.syuv_seq = panel->lcd_hv_syuv_seq;
 		lcd_dev[sel]->tcon0_hv_ctl.bits.syuv_fdly = panel->lcd_hv_syuv_fdly;
+		lcd_dev[sel]->tcon0_hv_ctl.bits.res0 = 0x80000;
 		panel->lcd_fresh_mode = 0;
         tcon0_cfg_mode_auto(sel,panel);
 	}
@@ -751,6 +759,38 @@ s32 tcon1_cfg_ex(u32 sel, disp_panel_para * panel)
 
 	tcon1_cfg(sel, &timing);
 	return 0;
+}
+
+s32 tcon1_yuv_range(u32 sel,u32 onoff)
+{
+       lcd_dev[sel]->tcon_ceu_coef_rr.bits.value = 0x100;
+       lcd_dev[sel]->tcon_ceu_coef_rg.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_rb.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_rc.bits.value = 0;
+
+       lcd_dev[sel]->tcon_ceu_coef_gr.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_gg.bits.value = 0x100;
+       lcd_dev[sel]->tcon_ceu_coef_gb.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_gc.bits.value = 0;
+
+       lcd_dev[sel]->tcon_ceu_coef_br.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_bg.bits.value = 0;
+       lcd_dev[sel]->tcon_ceu_coef_bb.bits.value = 0x100;
+       lcd_dev[sel]->tcon_ceu_coef_bc.bits.value = 0;
+
+       lcd_dev[sel]->tcon_ceu_coef_rv.bits.max = 235;
+       lcd_dev[sel]->tcon_ceu_coef_rv.bits.min = 16;
+       lcd_dev[sel]->tcon_ceu_coef_gv.bits.max = 240;
+       lcd_dev[sel]->tcon_ceu_coef_gv.bits.min = 16;
+       lcd_dev[sel]->tcon_ceu_coef_bv.bits.max = 240;
+       lcd_dev[sel]->tcon_ceu_coef_bv.bits.min = 16;
+
+       if(onoff)
+               lcd_dev[sel]->tcon_ceu_ctl.bits.ceu_en = 1;
+       else
+               lcd_dev[sel]->tcon_ceu_ctl.bits.ceu_en = 0;
+
+       return 0;
 }
 
 s32 tcon1_hdmi_color_remap(u32 sel,u32 onoff)

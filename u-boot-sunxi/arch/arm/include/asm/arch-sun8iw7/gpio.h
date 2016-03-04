@@ -101,5 +101,6 @@ typedef struct
 normal_gpio_set_t;
 
 int boot_set_gpio(void  *user_gpio_list, __u32 group_count_max, __s32 set_gpio);
+__u32 get_dram_type_by_gpio(void);
 
 #endif /* _SUNXI_GPIO_H */
