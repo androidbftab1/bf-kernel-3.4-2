@@ -253,7 +253,7 @@ int sunxi_bmp_display(char *name)
 	   return -1;
     }
 #else
-	char *const bmp_argv[4] = {"bootloader", bmp_name, "40000000", NULL};
+	char *const bmp_argv[4] = {"boot-res", bmp_name, "40000000", NULL};
   	if(do_aw_fat_fsload(0, 0, 4, bmp_argv))
 	{
 	   printf("sunxi bmp info error : unable to open logo file %s\n", bmp_argv[1]);
